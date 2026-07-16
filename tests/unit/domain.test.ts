@@ -1,0 +1,74 @@
+import { describe, expect, it } from "vitest";
+import { normalizeEmail, normalizeLocale, parseBoolean } from "@/lib/normalization";
+import { resolveVariant } from "@/server/campaigns/variants";
+import { assignWave } from "@/server/campaigns/waves";
+import { calculateRates } from "@/server/analytics/rates";
+import { normalizeClickedUrl, classifyLink } from "@/server/webhooks/links";
+import { retryBackoffMs } from "@/server/jobs/backoff";
+import { mapResendEventType } from "@/server/webhooks/mapping";
+import { scoreRecipientPriority } from "@/server/imports/priority";
+
+describe("domain utilities", () => {
+  it("normalizes email without unsafe mailbox transformations", () => {
+    expect(normalizeEmail(" User+Tag@Example.COM ")).toBe("user+tag@example.com");
+  });
+
+  it("normalizes locales and booleans", () => {
+    expect(normalizeLocale("de_DE")).toBe("de-de");
+    expect(parseBoolean("yes")).toBe(true);
+    expect(parseBoolean("0")).toBe(false);
+    expect(parseBoolean("maybe")).toBeNull();
+  });
+
+  it("resolves variants in the required order", () => {
+    const variants = [
+      { id: "fallback", locale: "en", recipientRole: "generic", isFallback: true },
+      { id: "role", locale: "en", recipientRole: "admin", isFallback: false },
+      { id: "locale", locale: "de", recipientRole: "generic", isFallback: false }
+    ];
+    expect(resolveVariant(variants, { locale: "de", role: "admin", defaultLocale: "en" })?.id).toBe("locale");
+    expect(resolveVariant(variants, { locale: "fr", role: "admin", defaultLocale: "en" })?.id).toBe("role");
+  });
+
+  it("assigns waves deterministically", () => {
+    const waves = [{ id: "a", position: 1, recipientLimit: 2 }, { id: "b", position: 2, recipientLimit: null }];
+    expect(assignWave(0, waves)).toBe("a");
+    expect(assignWave(2, waves)).toBe("b");
+    expect(assignWave(99, waves)).toBe("b");
+  });
+
+  it("calculates rates with zero guards", () => {
+    expect(calculateRates({ sent: 0, delivered: 0, uniqueOpened: 0, uniqueClicked: 0, bounced: 0, complained: 0, unsubscribed: 0 }).deliveryRate).toBe(0);
+    expect(calculateRates({ sent: 10, delivered: 8, uniqueOpened: 4, uniqueClicked: 2, bounced: 1, complained: 0, unsubscribed: 1 }).deliveryRate).toBe(0.8);
+  });
+
+  it("normalizes and classifies clicked links", () => {
+    const url = normalizeClickedUrl("https://example.com/reset?token=abc&utm=1#frag");
+    expect(url).toContain("token=%5Bredacted%5D");
+    expect(url).not.toContain("#frag");
+    expect(classifyLink(url)).toBe("password_reset");
+  });
+
+  it("maps webhooks and retry backoff", () => {
+    expect(mapResendEventType("email.clicked")).toBe("clicked");
+    expect(mapResendEventType("other")).toBe("unknown");
+    expect(retryBackoffMs(2)).toBeGreaterThan(retryBackoffMs(1));
+  });
+
+  it("scores recipient priority cohorts", () => {
+    const high = scoreRecipientPriority({
+      emailVerified: true,
+      marketingConsent: true,
+      lastActiveAt: new Date(),
+      locale: "en",
+      role: "buyer",
+      platform: "web",
+      externalId: "user-1"
+    });
+    expect(high.priorityScore).toBeGreaterThanOrEqual(80);
+    expect(high.priorityCohort).toBe("high_intent");
+
+    const low = scoreRecipientPriority({ emailVerified: false, marketingConsent: false, lastActiveAt: null });
+    expect(low.priorityCohort).toBe("low_confidence");
+  });
+});
