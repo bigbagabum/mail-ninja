@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { MailNinjaLogo } from "@/components/ui";
 import { loginAction } from "./actions";
 
 export default function LoginPage() {
@@ -8,7 +9,9 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-panel px-4">
       <form action={action} className="w-full max-w-sm rounded border border-line bg-white p-6 shadow-sm">
-        <h1 className="text-xl font-semibold">Mail Ninja</h1>
+        <h1 className="text-xl font-semibold">
+          <MailNinjaLogo />
+        </h1>
         <p className="mt-1 text-sm text-muted">Sign in with your administrator account.</p>
         <label className="mt-6 block text-sm font-medium" htmlFor="email">
           Email

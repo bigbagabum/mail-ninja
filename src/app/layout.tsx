@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "./login/actions";
+import { MailNinjaLogo } from "@/components/ui";
 import { currentAdmin } from "@/server/auth/session";
 import { env, isSendingEnabled } from "@/lib/env";
 
@@ -32,8 +33,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <div className="min-h-screen">
             <header className="border-b border-line bg-white">
               <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
-                <Link href="/dashboard" className="font-semibold">
-                  {env.APP_NAME}
+                <Link href="/dashboard" className="text-ink hover:text-accent" aria-label={`${env.APP_NAME} dashboard`}>
+                  <MailNinjaLogo />
                 </Link>
                 <form action={logoutAction}>
                   <button className="text-sm text-muted hover:text-ink" type="submit">
