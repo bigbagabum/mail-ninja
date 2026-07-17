@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
 import { adminUsers } from "@/db/schema";
+import { PasswordInput } from "@/components/password-input";
 import { Badge, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/server/auth/session";
 import { changeOwnPasswordAction, createAdminAction, resetAdminPasswordAction, setAdminStatusAction } from "./actions";
@@ -39,7 +40,7 @@ export default async function AdminSettingsPage() {
                     </form>
                     <form action={resetAdminPasswordAction} className="flex max-w-md gap-2">
                       <input type="hidden" name="adminUserId" value={admin.id} />
-                      <input name="password" type="password" minLength={12} required placeholder="New password" className="w-48 rounded border-line text-sm" />
+                      <PasswordInput name="password" minLength={12} required placeholder="New password" autoComplete="new-password" className="w-48 rounded border-line text-sm" />
                       <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">Reset</button>
                     </form>
                   </div>
@@ -55,14 +56,14 @@ export default async function AdminSettingsPage() {
           <h2 className="font-semibold">Add Administrator</h2>
           <label className="text-sm font-medium">Email<input name="email" type="email" required className="mt-1 w-full rounded border-line" /></label>
           <label className="text-sm font-medium">Display name<input name="displayName" required className="mt-1 w-full rounded border-line" /></label>
-          <label className="text-sm font-medium">Temporary password<input name="password" type="password" minLength={12} required className="mt-1 w-full rounded border-line" /></label>
+          <label className="text-sm font-medium">Temporary password<PasswordInput name="password" minLength={12} required autoComplete="new-password" /></label>
           <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">Create administrator</button>
         </form>
 
         <form action={changeOwnPasswordAction} className="grid gap-3 rounded border border-line bg-white p-5">
           <h2 className="font-semibold">Change My Password</h2>
-          <label className="text-sm font-medium">Current password<input name="currentPassword" type="password" required className="mt-1 w-full rounded border-line" /></label>
-          <label className="text-sm font-medium">New password<input name="newPassword" type="password" minLength={12} required className="mt-1 w-full rounded border-line" /></label>
+          <label className="text-sm font-medium">Current password<PasswordInput name="currentPassword" required autoComplete="current-password" /></label>
+          <label className="text-sm font-medium">New password<PasswordInput name="newPassword" minLength={12} required autoComplete="new-password" /></label>
           <p className="text-sm text-muted">Changing your password revokes existing sessions. Sign in again with the new password.</p>
           <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">Change password</button>
         </form>

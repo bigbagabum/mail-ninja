@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { MailNinjaLogo } from "@/components/logo";
+import { PasswordInput } from "@/components/password-input";
 import { loginAction } from "./actions";
 
 export default function LoginPage() {
@@ -20,7 +21,7 @@ export default function LoginPage() {
         <label className="mt-4 block text-sm font-medium" htmlFor="password">
           Password
         </label>
-        <input id="password" name="password" type="password" required className="mt-1 w-full rounded border-line" />
+        <PasswordInput id="password" name="password" required autoComplete="current-password" />
         {state?.error ? <p className="mt-3 text-sm text-danger">{state.error}</p> : null}
         <button disabled={pending} className="mt-6 w-full rounded bg-accent px-3 py-2 font-medium text-white disabled:opacity-60">
           Sign in
