@@ -5,6 +5,7 @@
 body {
   color: #17202a;
   background: #f7f9fb;
+  overflow-x: clip;
 }
 
 .status-badge {

@@ -33,7 +33,7 @@ export function AppNav() {
   return (
     <nav
       ref={desktopNavRef}
-      className={adaptiveGlassSurface("flex max-w-full gap-1.5 overflow-x-auto rounded-full border px-2 py-1.5")}
+      className={adaptiveGlassSurface("flex w-full max-w-full min-w-0 flex-wrap justify-center gap-1.5 overflow-hidden rounded-[28px] border px-2 py-1.5 lg:w-fit")}
       aria-label="Primary navigation"
     >
       {nav.map(([href, label]) => {
@@ -46,8 +46,8 @@ export function AppNav() {
             aria-current={isActive ? "page" : undefined}
             className={
               isActive
-                ? adaptiveGlassItem(adaptiveGlassActive("relative z-10 block shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-all duration-200"))
-                : adaptiveGlassItem("relative z-10 block shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent")
+                ? adaptiveGlassItem(adaptiveGlassActive("relative z-10 block rounded-full px-3 py-1.5 text-sm font-semibold transition-all duration-200"))
+                : adaptiveGlassItem("relative z-10 block rounded-full px-3 py-1.5 text-sm font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent")
             }
           >
             {label}
