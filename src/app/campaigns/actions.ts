@@ -9,16 +9,35 @@ import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
 import { hasUnsubscribeLink } from "@/lib/templates";
 
-const campaignSchema = z.object({
+function slugifyCampaignKey(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[_\s]+/g, "-")
+    .replace(/[^a-z0-9-]/g, "")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 81);
+}
+
+const campaignSchema = z
+  .object({
   name: z.string().min(1),
-  campaignKey: z.string().regex(/^[a-z0-9][a-z0-9-]{1,80}$/),
+  campaignKey: z.string().optional(),
   description: z.string().optional(),
   campaignType: z.enum(["service_update", "marketing", "newsletter", "announcement"]),
   defaultLocale: z.string().min(2),
   fromName: z.string().min(1),
   fromEmail: z.string().email(),
   replyTo: z.string().email().optional().or(z.literal(""))
-});
+})
+  .transform((data) => {
+    const campaignKey = slugifyCampaignKey(data.campaignKey || data.name);
+    if (!campaignKey) {
+      throw new Error("Campaign key must contain at least one letter or number.");
+    }
+    return { ...data, campaignKey };
+  });
 
 export async function createCampaignAction(formData: FormData) {
   const admin = await requireAdmin();

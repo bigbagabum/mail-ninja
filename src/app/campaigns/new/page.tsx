@@ -12,9 +12,9 @@ export default async function NewCampaignPage() {
         <label className="text-sm font-medium">Name<input name="name" required className="mt-1 w-full rounded border-line" /></label>
         <label className="text-sm font-medium">
           Campaign key
-          <input name="campaignKey" required pattern="[a-z0-9][a-z0-9-]{1,80}" placeholder="newsletter-2026-07" className="mt-1 w-full rounded border-line" />
+          <input name="campaignKey" placeholder="newsletter-2026-07" maxLength={120} className="mt-1 w-full rounded border-line" />
           <span className="mt-1 block text-xs font-normal text-muted">
-            Stable unique slug used for retries, analytics, and Resend resource names. Use lowercase letters, numbers, and hyphens.
+            Stable unique slug used for retries, analytics, and Resend resource names. Spaces, underscores, and uppercase letters are converted automatically.
           </span>
         </label>
         <label className="text-sm font-medium">Description<textarea name="description" className="mt-1 w-full rounded border-line" /></label>
