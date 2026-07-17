@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useRef } from "react";
+import { adaptiveGlassActive, adaptiveGlassItem, adaptiveGlassSurface, useAdaptiveGlass } from "@/components/magic/adaptive-glass";
 
 const nav = [
   ["/dashboard", "Dashboard"],
@@ -25,10 +27,13 @@ function activeHref(pathname: string) {
 
 export function AppNav() {
   const pathname = usePathname();
+  const desktopNavRef = useRef<HTMLElement | null>(null);
+  useAdaptiveGlass(desktopNavRef, pathname);
   const active = activeHref(pathname);
   return (
     <nav
-      className="-mx-3 flex gap-2 overflow-x-auto border-y border-white/70 bg-white/45 px-3 py-2 shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_10px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl md:mx-0 md:block md:space-y-1 md:overflow-visible md:rounded-xl md:border md:border-white/70 md:bg-white/35 md:p-2"
+      ref={desktopNavRef}
+      className={adaptiveGlassSurface("-mx-3 flex gap-2 overflow-x-auto rounded-none border-y px-3 py-2 md:mx-0 md:block md:space-y-1 md:overflow-visible md:rounded-[28px] md:border md:p-2")}
       aria-label="Primary navigation"
     >
       {nav.map(([href, label]) => {
@@ -37,11 +42,12 @@ export function AppNav() {
           <Link
             key={href}
             href={href}
+            data-adaptive-glass-sample
             aria-current={isActive ? "page" : undefined}
             className={
               isActive
-                ? "block shrink-0 whitespace-nowrap rounded-lg border border-white/80 bg-white/80 px-3 py-2 text-sm font-medium text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.9),0_8px_20px_rgba(15,118,110,0.12)] backdrop-blur-xl"
-                : "block shrink-0 whitespace-nowrap rounded-lg border border-transparent px-3 py-2 text-sm text-muted transition hover:border-white/70 hover:bg-white/55 hover:text-ink hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.8)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+                ? adaptiveGlassItem(adaptiveGlassActive("relative z-10 block shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-all duration-200"))
+                : adaptiveGlassItem("relative z-10 block shrink-0 whitespace-nowrap rounded-full px-3 py-2 text-sm font-semibold transition-all duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent")
             }
           >
             {label}

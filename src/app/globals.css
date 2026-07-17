@@ -11,6 +11,69 @@ body {
   @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset;
 }
 
+.adaptive-glass {
+  position: relative;
+  color: var(--adaptive-glass-fg, rgba(15, 23, 42, 0.94));
+  background:
+    linear-gradient(135deg, var(--adaptive-glass-bg-a, rgba(255, 255, 255, 0.68)), var(--adaptive-glass-bg-b, rgba(255, 255, 255, 0.44))),
+    radial-gradient(circle at 20% 0%, var(--adaptive-glass-bg-c, rgba(20, 184, 166, 0.09)), transparent 42%);
+  border-color: var(--adaptive-glass-border, rgba(255, 255, 255, 0.58));
+  box-shadow: var(--adaptive-glass-shadow, 0 18px 48px rgba(15, 23, 42, 0.08));
+  backdrop-filter: blur(28px) saturate(200%);
+  -webkit-backdrop-filter: blur(28px) saturate(200%);
+  isolation: isolate;
+}
+
+.adaptive-glass::before,
+.adaptive-glass::after {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset-inline: 12px;
+  z-index: 0;
+}
+
+.adaptive-glass::before {
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+.adaptive-glass::after {
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--adaptive-glass-hairline, rgba(15, 23, 42, 0.1)), transparent);
+}
+
+.adaptive-glass-item {
+  color: var(--adaptive-glass-muted-fg, rgba(51, 65, 85, 0.76));
+  text-shadow: var(--adaptive-glass-text-shadow, none);
+}
+
+.adaptive-glass-item:hover,
+.adaptive-glass-item:focus-visible {
+  color: var(--adaptive-glass-fg, rgba(15, 23, 42, 0.94));
+  background: var(--adaptive-glass-hover-bg, rgba(255, 255, 255, 0.5));
+}
+
+.adaptive-glass-icon-button {
+  color: var(--adaptive-glass-fg, rgba(15, 23, 42, 0.94));
+  background: var(--adaptive-glass-chip-bg, rgba(255, 255, 255, 0.34));
+  border: 1px solid var(--adaptive-glass-chip-border, rgba(255, 255, 255, 0.58));
+}
+
+.adaptive-glass-cluster {
+  background: var(--adaptive-glass-chip-bg, rgba(255, 255, 255, 0.34));
+  border: 1px solid var(--adaptive-glass-chip-border, rgba(255, 255, 255, 0.58));
+}
+
+.adaptive-glass-active {
+  color: var(--adaptive-glass-active-fg, rgba(255, 255, 255, 0.96));
+  background: var(--adaptive-glass-active-bg, rgba(15, 23, 42, 0.92));
+  box-shadow: var(--adaptive-glass-active-shadow, 0 12px 28px rgba(15, 23, 42, 0.18));
+  text-shadow: none;
+}
+
 @media (max-width: 767px) {
   table {
     min-width: 720px;
