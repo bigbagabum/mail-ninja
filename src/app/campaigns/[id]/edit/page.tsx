@@ -31,7 +31,20 @@ export default async function CampaignEditPage({ params }: { params: Promise<{ i
       <form action={updateCampaignAction} className="grid max-w-2xl gap-4 rounded border border-line bg-white p-5">
         <input type="hidden" name="campaignId" value={id} />
         <label className="text-sm font-medium">Name<input name="name" required defaultValue={campaign.name} className="mt-1 w-full rounded border-line" /></label>
-        <label className="text-sm font-medium">Campaign key<input name="campaignKey" required pattern="[a-z0-9][a-z0-9-]{1,80}" defaultValue={campaign.campaignKey} className="mt-1 w-full rounded border-line" /></label>
+        <label className="text-sm font-medium">
+          Campaign key
+          <input
+            name="campaignKey"
+            required
+            pattern="[a-z0-9][a-z0-9-]{1,80}"
+            defaultValue={campaign.campaignKey}
+            placeholder="newsletter-2026-07"
+            className="mt-1 w-full rounded border-line"
+          />
+          <span className="mt-1 block text-xs font-normal text-muted">
+            Stable unique slug used for retries, analytics, and Resend resource names. Use lowercase letters, numbers, and hyphens.
+          </span>
+        </label>
         <label className="text-sm font-medium">Description<textarea name="description" defaultValue={campaign.description ?? ""} className="mt-1 w-full rounded border-line" /></label>
         <label className="text-sm font-medium">Type<select name="campaignType" defaultValue={campaign.campaignType} className="mt-1 w-full rounded border-line"><option value="newsletter">Newsletter</option><option value="marketing">Marketing</option><option value="announcement">Announcement</option><option value="service_update">Service update</option></select></label>
         <label className="text-sm font-medium">Default locale<input name="defaultLocale" required defaultValue={campaign.defaultLocale} className="mt-1 w-full rounded border-line" /></label>
