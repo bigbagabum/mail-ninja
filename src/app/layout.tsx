@@ -20,7 +20,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         {admin ? (
           <div className="min-h-screen">
             <header className="border-b border-line bg-white">
-              <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+              <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3">
                 <Link href="/dashboard" className="text-ink hover:text-accent" aria-label={`${env.APP_NAME} dashboard`}>
                   <MailNinjaLogo />
                 </Link>
@@ -36,9 +36,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 </div>
               ) : null}
             </header>
-            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[220px_1fr]">
+            <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-3 py-4 sm:px-4 sm:py-6 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
               <AppNav />
-              <main>{children}</main>
+              <main className="min-w-0">{children}</main>
             </div>
           </div>
         ) : (

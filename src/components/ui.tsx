@@ -13,7 +13,7 @@ export function Badge({ children, tone = "neutral" }: { children: ReactNode; ton
 
 export function ButtonLink({ href, children }: { href: string; children: ReactNode }) {
   return (
-    <Link className="inline-flex items-center rounded bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-teal-800" href={href}>
+    <Link className="inline-flex w-fit items-center rounded bg-accent px-3 py-2 text-sm font-medium text-white hover:bg-teal-800" href={href}>
       {children}
     </Link>
   );
@@ -21,9 +21,9 @@ export function ButtonLink({ href, children }: { href: string; children: ReactNo
 
 export function PageHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div className="mb-6 flex items-center justify-between">
-      <h1 className="text-2xl font-semibold tracking-normal">{title}</h1>
-      {action}
+    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <h1 className="min-w-0 break-words text-xl font-semibold tracking-normal sm:text-2xl">{title}</h1>
+      {action ? <div className="flex shrink-0 flex-wrap gap-2">{action}</div> : null}
     </div>
   );
 }

@@ -10,3 +10,13 @@ body {
 .status-badge {
   @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset;
 }
+
+@media (max-width: 767px) {
+  table {
+    min-width: 720px;
+  }
+
+  div:has(> table) {
+    overflow-x: auto;
+  }
+}
