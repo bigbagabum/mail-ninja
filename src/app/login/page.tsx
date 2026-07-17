@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { MailNinjaLogo } from "@/components/ui";
+import { MailNinjaLogo } from "@/components/logo";
 import { loginAction } from "./actions";
 
 export default function LoginPage() {

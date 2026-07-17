@@ -2,7 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "./login/actions";
-import { MailNinjaLogo } from "@/components/ui";
+import { MailNinjaLogo } from "@/components/logo";
 import { currentAdmin } from "@/server/auth/session";
 import { env, isSendingEnabled } from "@/lib/env";
 
