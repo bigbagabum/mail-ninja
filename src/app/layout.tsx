@@ -2,6 +2,7 @@ import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { logoutAction } from "./login/actions";
+import { AppNav } from "@/components/app-nav";
 import { MailNinjaLogo } from "@/components/logo";
 import { currentAdmin } from "@/server/auth/session";
 import { env, isSendingEnabled } from "@/lib/env";
@@ -10,19 +11,6 @@ export const metadata: Metadata = {
   title: "Mail Ninja",
   description: "Standalone email campaign management"
 };
-
-const nav = [
-  ["/dashboard", "Dashboard"],
-  ["/campaigns", "Campaigns"],
-  ["/recipients", "Recipients"],
-  ["/imports", "Imports"],
-  ["/suppressions", "Suppressions"],
-  ["/events", "Events"],
-  ["/jobs", "Jobs"],
-  ["/settings", "Settings"],
-  ["/settings/providers", "Provider Keys"],
-  ["/settings/admins", "Admins"]
-];
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const admin = await currentAdmin();
@@ -49,13 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
               ) : null}
             </header>
             <div className="mx-auto grid max-w-7xl grid-cols-1 gap-6 px-4 py-6 md:grid-cols-[220px_1fr]">
-              <nav className="space-y-1">
-                {nav.map(([href, label]) => (
-                  <Link key={href} href={href} className="block rounded px-3 py-2 text-sm text-muted hover:bg-white hover:text-ink">
-                    {label}
-                  </Link>
-                ))}
-              </nav>
+              <AppNav />
               <main>{children}</main>
             </div>
           </div>
