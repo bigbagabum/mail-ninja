@@ -117,20 +117,28 @@ export async function createWaveAction(formData: FormData) {
 }
 
 export async function prepareCampaignAction(formData: FormData) {
-  const admin = await requireAdmin();
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
+  const result = await prepareCampaignByIdAction(campaignId);
+  if (!result.ok) throw new Error(result.error);
+  redirect(`/campaigns/${campaignId}/recipients`);
+}
+
+export async function prepareCampaignByIdAction(campaignId: string) {
+  const admin = await requireAdmin();
+  const parsedCampaignId = z.string().uuid().safeParse(campaignId);
+  if (!parsedCampaignId.success) return { ok: false as const, error: "Invalid campaign ID." };
   await db.transaction(async (tx) => {
-    const campaign = await tx.query.campaigns.findFirst({ where: eq(campaigns.id, campaignId) });
+    const campaign = await tx.query.campaigns.findFirst({ where: eq(campaigns.id, parsedCampaignId.data) });
     if (!campaign) throw new Error("Campaign not found.");
     const variants = await tx.query.campaignVariants.findMany({ where: eq(campaignVariants.campaignId, campaignId) });
     if (!variants.some((variant) => variant.isFallback)) throw new Error("A fallback variant is required before preparation.");
     if (campaign.campaignType !== "service_update" && !variants.some((variant) => hasUnsubscribeLink(variant.htmlContent, variant.textContent))) {
       throw new Error("Marketing-style campaigns require an unsubscribe link.");
     }
-    await tx.insert(jobs).values({ workspaceId: admin.workspaceId, type: "prepare_campaign", payload: { campaignId }, priority: 20 });
-    await tx.insert(auditLogs).values({ workspaceId: admin.workspaceId, adminUserId: admin.id, action: "campaign_preparation", entityType: "campaign", entityId: campaignId });
+    await tx.insert(jobs).values({ workspaceId: admin.workspaceId, type: "prepare_campaign", payload: { campaignId: parsedCampaignId.data }, priority: 20 });
+    await tx.insert(auditLogs).values({ workspaceId: admin.workspaceId, adminUserId: admin.id, action: "campaign_preparation", entityType: "campaign", entityId: parsedCampaignId.data });
   });
-  redirect(`/campaigns/${campaignId}/recipients`);
+  return { ok: true as const };
 }
 
 export async function sendWaveAction(formData: FormData) {

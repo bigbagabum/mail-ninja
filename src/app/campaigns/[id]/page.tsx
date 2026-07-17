@@ -4,7 +4,7 @@ import { campaigns } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { Badge, PageHeader } from "@/components/ui";
 import { CampaignTabs } from "@/components/campaign-tabs";
-import { prepareCampaignAction } from "../actions";
+import { PrepareCampaignButton } from "@/components/prepare-campaign-button";
 
 export default async function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
@@ -20,11 +20,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ id: s
         <div className="rounded border border-line bg-white p-4"><div className="text-sm text-muted">Type</div><div className="mt-2 font-medium">{campaign.campaignType}</div></div>
         <div className="rounded border border-line bg-white p-4"><div className="text-sm text-muted">Sender</div><div className="mt-2 font-medium">{campaign.fromName} &lt;{campaign.fromEmail}&gt;</div></div>
       </div>
-      <form action={prepareCampaignAction} className="mt-6 rounded border border-amber-200 bg-amber-50 p-4">
-        <input type="hidden" name="campaignId" value={id} />
-        <p className="text-sm text-amber-900">Preparation queues a background job, excludes active suppressions, resolves variants and assigns deterministic waves.</p>
-        <button className="mt-3 rounded bg-accent px-3 py-2 text-sm font-medium text-white">Prepare campaign</button>
-      </form>
+      <PrepareCampaignButton campaignId={id} />
     </>
   );
 }
