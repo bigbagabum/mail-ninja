@@ -1,11 +1,14 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { and, eq } from "drizzle-orm";
 import { logoutAction } from "./login/actions";
 import { AppNav } from "@/components/app-nav";
 import { MailNinjaLogo } from "@/components/logo";
+import { db } from "@/db";
+import { providerAccounts, workspaceSettings } from "@/db/schema";
 import { currentAdmin } from "@/server/auth/session";
-import { env, isSendingEnabled } from "@/lib/env";
+import { env } from "@/lib/env";
 
 export const metadata: Metadata = {
   title: "Mail Ninja",
@@ -14,6 +17,7 @@ export const metadata: Metadata = {
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const admin = await currentAdmin();
+  const sendingReady = admin ? await getSendingReady(admin.workspaceId) : false;
   return (
     <html lang="en">
       <body>
@@ -33,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                   </button>
                 </form>
               </div>
-              {!isSendingEnabled ? (
+              {!sendingReady ? (
                 <div className="border-t border-amber-200 bg-amber-50 px-4 py-2 text-center text-sm text-amber-900">
                   Sending is disabled until provider credentials and sender settings are configured.
                 </div>
@@ -49,4 +53,16 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </body>
     </html>
   );
+}
+
+async function getSendingReady(workspaceId: string) {
+  const [settings, activeProviderAccount] = await Promise.all([
+    db.query.workspaceSettings.findFirst({ where: eq(workspaceSettings.workspaceId, workspaceId) }),
+    db.query.providerAccounts.findFirst({
+      where: and(eq(providerAccounts.workspaceId, workspaceId), eq(providerAccounts.provider, "resend"), eq(providerAccounts.status, "active"))
+    })
+  ]);
+  const hasProviderKey = Boolean(activeProviderAccount || env.RESEND_API_KEY);
+  const hasSender = Boolean(settings?.defaultFromEmail || env.DEFAULT_FROM_EMAIL);
+  return hasProviderKey && hasSender;
 }
