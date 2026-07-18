@@ -116,3 +116,27 @@ export async function loadFilteredRecipients(
 }
 
 export const emptyCampaignRecipientFilters = defaultFilters;
+
+export function describeCampaignRecipientFilters(
+  filters: CampaignRecipientFilters,
+) {
+  const descriptions: string[] = [];
+  if (filters.tagSlugs.length > 0) {
+    descriptions.push(`Tags: ${filters.tagSlugs.join(", ")}`);
+  }
+  if (filters.locale) descriptions.push(`Locale: ${filters.locale}`);
+  if (filters.platform) descriptions.push(`Platform: ${filters.platform}`);
+  if (filters.emailVerified !== null) {
+    descriptions.push(
+      filters.emailVerified ? "Email verified" : "Email not verified",
+    );
+  }
+  if (filters.marketingConsent !== null) {
+    descriptions.push(
+      filters.marketingConsent
+        ? "Marketing consent required"
+        : "No marketing consent",
+    );
+  }
+  return descriptions;
+}
