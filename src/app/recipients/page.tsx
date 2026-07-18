@@ -6,20 +6,11 @@ import {
   recipientTagAssignments,
   recipientTags,
 } from "@/db/schema";
+import { isMissingRecipientTagTableError } from "@/lib/db-errors";
 import { tagColorClasses } from "@/lib/tags";
 import { requireAdmin } from "@/server/auth/session";
 import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 import { addRecipientAction } from "./actions";
-
-function isMissingTagTableError(error: unknown) {
-  const text =
-    error instanceof Error ? `${error.message} ${error.cause}` : String(error);
-  return (
-    text.includes("42P01") ||
-    text.includes("recipient_tags") ||
-    text.includes("recipient_tag_assignments")
-  );
-}
 
 export default async function RecipientsPage() {
   const admin = await requireAdmin();
@@ -65,7 +56,7 @@ export default async function RecipientsPage() {
           )
       : [];
   } catch (error) {
-    if (!isMissingTagTableError(error)) throw error;
+    if (!isMissingRecipientTagTableError(error)) throw error;
     tagTablesMissing = true;
   }
   const tagsByRecipient = new Map<string, typeof assignments>();
