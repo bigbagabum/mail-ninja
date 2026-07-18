@@ -2,9 +2,17 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { auditLogs, campaigns, campaignVariants, campaignWaves, jobs } from "@/db/schema";
+import {
+  auditLogs,
+  campaigns,
+  campaignRecipients,
+  campaignVariants,
+  campaignWaves,
+  jobs,
+  recipients,
+} from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
 import { hasUnsubscribeLink } from "@/lib/templates";
@@ -22,19 +30,26 @@ function slugifyCampaignKey(value: string) {
 
 const campaignSchema = z
   .object({
-  name: z.string().min(1),
-  campaignKey: z.string().optional(),
-  description: z.string().optional(),
-  campaignType: z.enum(["service_update", "marketing", "newsletter", "announcement"]),
-  defaultLocale: z.string().min(2),
-  fromName: z.string().min(1),
-  fromEmail: z.string().email(),
-  replyTo: z.string().email().optional().or(z.literal(""))
-})
+    name: z.string().min(1),
+    campaignKey: z.string().optional(),
+    description: z.string().optional(),
+    campaignType: z.enum([
+      "service_update",
+      "marketing",
+      "newsletter",
+      "announcement",
+    ]),
+    defaultLocale: z.string().min(2),
+    fromName: z.string().min(1),
+    fromEmail: z.string().email(),
+    replyTo: z.string().email().optional().or(z.literal("")),
+  })
   .transform((data) => {
     const campaignKey = slugifyCampaignKey(data.campaignKey || data.name);
     if (!campaignKey) {
-      throw new Error("Campaign key must contain at least one letter or number.");
+      throw new Error(
+        "Campaign key must contain at least one letter or number.",
+      );
     }
     return { ...data, campaignKey };
   });
@@ -42,8 +57,24 @@ const campaignSchema = z
 export async function createCampaignAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = campaignSchema.parse(Object.fromEntries(formData));
-  const [campaign] = await db.insert(campaigns).values({ ...data, replyTo: data.replyTo || null, workspaceId: admin.workspaceId, createdBy: admin.id }).returning();
-  await db.insert(auditLogs).values({ workspaceId: admin.workspaceId, adminUserId: admin.id, action: "campaign_creation", entityType: "campaign", entityId: campaign.id });
+  const [campaign] = await db
+    .insert(campaigns)
+    .values({
+      ...data,
+      replyTo: data.replyTo || null,
+      workspaceId: admin.workspaceId,
+      createdBy: admin.id,
+    })
+    .returning();
+  await db
+    .insert(auditLogs)
+    .values({
+      workspaceId: admin.workspaceId,
+      adminUserId: admin.id,
+      action: "campaign_creation",
+      entityType: "campaign",
+      entityId: campaign.id,
+    });
   redirect(`/campaigns/${campaign.id}`);
 }
 
@@ -51,8 +82,11 @@ export async function updateCampaignAction(formData: FormData) {
   const admin = await requireAdmin();
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
   const data = campaignSchema.parse(Object.fromEntries(formData));
-  const existing = await db.query.campaigns.findFirst({ where: eq(campaigns.id, campaignId) });
-  if (!existing || existing.workspaceId !== admin.workspaceId) throw new Error("Campaign not found.");
+  const existing = await db.query.campaigns.findFirst({
+    where: eq(campaigns.id, campaignId),
+  });
+  if (!existing || existing.workspaceId !== admin.workspaceId)
+    throw new Error("Campaign not found.");
   await db.transaction(async (tx) => {
     await tx
       .update(campaigns)
@@ -63,7 +97,11 @@ export async function updateCampaignAction(formData: FormData) {
         metadata:
           existing.status === "draft"
             ? existing.metadata
-            : { ...existing.metadata, preparationInvalidated: true, preparationInvalidatedAt: new Date().toISOString() }
+            : {
+                ...existing.metadata,
+                preparationInvalidated: true,
+                preparationInvalidatedAt: new Date().toISOString(),
+              },
       })
       .where(eq(campaigns.id, campaignId));
     await tx.insert(auditLogs).values({
@@ -71,7 +109,7 @@ export async function updateCampaignAction(formData: FormData) {
       adminUserId: admin.id,
       action: "campaign_update",
       entityType: "campaign",
-      entityId: campaignId
+      entityId: campaignId,
     });
   });
   redirect(`/campaigns/${campaignId}/edit`);
@@ -86,16 +124,31 @@ const variantSchema = z.object({
   previewText: z.string().optional(),
   htmlContent: z.string().min(1),
   textContent: z.string().optional(),
-  isFallback: z.coerce.boolean().optional()
+  isFallback: z.coerce.boolean().optional(),
 });
 
 export async function createVariantAction(formData: FormData) {
   await requireAdmin();
   const data = variantSchema.parse(Object.fromEntries(formData));
-  await db.insert(campaignVariants).values({ ...data, isFallback: Boolean(data.isFallback) }).onConflictDoUpdate({
-    target: [campaignVariants.campaignId, campaignVariants.locale, campaignVariants.recipientRole],
-    set: { name: data.name, subject: data.subject, previewText: data.previewText, htmlContent: data.htmlContent, textContent: data.textContent, isFallback: Boolean(data.isFallback), updatedAt: new Date() }
-  });
+  await db
+    .insert(campaignVariants)
+    .values({ ...data, isFallback: Boolean(data.isFallback) })
+    .onConflictDoUpdate({
+      target: [
+        campaignVariants.campaignId,
+        campaignVariants.locale,
+        campaignVariants.recipientRole,
+      ],
+      set: {
+        name: data.name,
+        subject: data.subject,
+        previewText: data.previewText,
+        htmlContent: data.htmlContent,
+        textContent: data.textContent,
+        isFallback: Boolean(data.isFallback),
+        updatedAt: new Date(),
+      },
+    });
   redirect(`/campaigns/${data.campaignId}/variants`);
 }
 
@@ -103,16 +156,30 @@ const waveSchema = z.object({
   campaignId: z.string().uuid(),
   name: z.string().min(1),
   position: z.coerce.number().int().positive(),
-  recipientLimit: z.union([z.coerce.number().int().positive(), z.literal("")]).optional()
+  recipientLimit: z
+    .union([z.coerce.number().int().positive(), z.literal("")])
+    .optional(),
 });
 
 export async function createWaveAction(formData: FormData) {
   await requireAdmin();
   const data = waveSchema.parse(Object.fromEntries(formData));
-  await db.insert(campaignWaves).values({ campaignId: data.campaignId, name: data.name, position: data.position, recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit }).onConflictDoUpdate({
-    target: [campaignWaves.campaignId, campaignWaves.position],
-    set: { name: data.name, recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit, updatedAt: new Date() }
-  });
+  await db
+    .insert(campaignWaves)
+    .values({
+      campaignId: data.campaignId,
+      name: data.name,
+      position: data.position,
+      recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit,
+    })
+    .onConflictDoUpdate({
+      target: [campaignWaves.campaignId, campaignWaves.position],
+      set: {
+        name: data.name,
+        recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit,
+        updatedAt: new Date(),
+      },
+    });
   redirect(`/campaigns/${data.campaignId}/waves`);
 }
 
@@ -124,26 +191,121 @@ export async function prepareCampaignAction(formData: FormData) {
 }
 
 export async function prepareCampaignByIdAction(campaignId: string) {
-  const admin = await requireAdmin();
-  const parsedCampaignId = z.string().uuid().safeParse(campaignId);
-  if (!parsedCampaignId.success) return { ok: false as const, error: "Invalid campaign ID." };
-  await db.transaction(async (tx) => {
-    const campaign = await tx.query.campaigns.findFirst({ where: eq(campaigns.id, parsedCampaignId.data) });
-    if (!campaign) throw new Error("Campaign not found.");
-    const variants = await tx.query.campaignVariants.findMany({ where: eq(campaignVariants.campaignId, campaignId) });
-    if (!variants.some((variant) => variant.isFallback)) throw new Error("A fallback variant is required before preparation.");
-    if (campaign.campaignType !== "service_update" && !variants.some((variant) => hasUnsubscribeLink(variant.htmlContent, variant.textContent))) {
-      throw new Error("Marketing-style campaigns require an unsubscribe link.");
-    }
-    await tx.insert(jobs).values({ workspaceId: admin.workspaceId, type: "prepare_campaign", payload: { campaignId: parsedCampaignId.data }, priority: 20 });
-    await tx.insert(auditLogs).values({ workspaceId: admin.workspaceId, adminUserId: admin.id, action: "campaign_preparation", entityType: "campaign", entityId: parsedCampaignId.data });
-  });
-  return { ok: true as const };
+  try {
+    const admin = await requireAdmin();
+    const parsedCampaignId = z.string().uuid().safeParse(campaignId);
+    if (!parsedCampaignId.success)
+      return { ok: false as const, error: "Invalid campaign ID." };
+    const result = await db.transaction(async (tx) => {
+      const campaign = await tx.query.campaigns.findFirst({
+        where: eq(campaigns.id, parsedCampaignId.data),
+      });
+      if (!campaign || campaign.workspaceId !== admin.workspaceId) {
+        return { ok: false as const, error: "Campaign not found." };
+      }
+      if (!["draft", "preparing"].includes(campaign.status)) {
+        return {
+          ok: false as const,
+          error: `Campaign cannot be prepared while it is ${campaign.status}.`,
+        };
+      }
+      const existingPrepared = await tx.query.campaignRecipients.findFirst({
+        where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
+      });
+      if (existingPrepared) {
+        return {
+          ok: true as const,
+          message: "Campaign already has prepared recipients.",
+        };
+      }
+      const variants = await tx.query.campaignVariants.findMany({
+        where: eq(campaignVariants.campaignId, parsedCampaignId.data),
+      });
+      if (!variants.some((variant) => variant.isFallback)) {
+        return {
+          ok: false as const,
+          error: "Add at least one fallback variant before preparation.",
+        };
+      }
+      if (
+        campaign.campaignType !== "service_update" &&
+        !variants.some((variant) =>
+          hasUnsubscribeLink(variant.htmlContent, variant.textContent),
+        )
+      ) {
+        return {
+          ok: false as const,
+          error:
+            "Marketing, newsletter and announcement campaigns require an unsubscribe link.",
+        };
+      }
+      const wave = await tx.query.campaignWaves.findFirst({
+        where: eq(campaignWaves.campaignId, parsedCampaignId.data),
+      });
+      if (!wave) {
+        return {
+          ok: false as const,
+          error: "Add at least one campaign wave before preparation.",
+        };
+      }
+      const recipient = await tx.query.recipients.findFirst({
+        where: eq(recipients.workspaceId, admin.workspaceId),
+      });
+      if (!recipient) {
+        return {
+          ok: false as const,
+          error: "Add or import recipients before preparing a campaign.",
+        };
+      }
+      const alreadyQueued = await tx.query.jobs.findFirst({
+        where: and(
+          eq(jobs.workspaceId, admin.workspaceId),
+          eq(jobs.type, "prepare_campaign"),
+          inArray(jobs.status, ["pending", "running", "retrying"]),
+          sql`${jobs.payload}->>'campaignId' = ${parsedCampaignId.data}`,
+        ),
+      });
+      if (alreadyQueued) {
+        return {
+          ok: true as const,
+          message: "Campaign preparation is already queued.",
+        };
+      }
+      await tx
+        .update(campaigns)
+        .set({ status: "preparing", updatedAt: new Date() })
+        .where(eq(campaigns.id, parsedCampaignId.data));
+      await tx.insert(jobs).values({
+        workspaceId: admin.workspaceId,
+        type: "prepare_campaign",
+        payload: { campaignId: parsedCampaignId.data },
+        priority: 20,
+      });
+      await tx.insert(auditLogs).values({
+        workspaceId: admin.workspaceId,
+        adminUserId: admin.id,
+        action: "campaign_preparation",
+        entityType: "campaign",
+        entityId: parsedCampaignId.data,
+      });
+      return { ok: true as const, message: "Campaign preparation queued." };
+    });
+    return result;
+  } catch (caught) {
+    const message =
+      caught instanceof Error ? caught.message : "Campaign preparation failed.";
+    return { ok: false as const, error: message };
+  }
 }
 
 export async function sendWaveAction(formData: FormData) {
   const admin = await requireAdmin();
   const waveId = z.string().uuid().parse(formData.get("waveId"));
-  await enqueueJob({ workspaceId: admin.workspaceId, type: "send_provider_broadcast", payload: { waveId }, priority: 10 });
+  await enqueueJob({
+    workspaceId: admin.workspaceId,
+    type: "send_provider_broadcast",
+    payload: { waveId },
+    priority: 10,
+  });
   redirect(`/jobs`);
 }
