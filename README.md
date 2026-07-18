@@ -24,18 +24,18 @@ Mail Ninja is designed to be cloned, configured, rebranded, and deployed as an i
 
 ## Tech Stack
 
-| Area | Choice |
-| --- | --- |
-| Web | Next.js App Router |
-| Language | TypeScript strict mode |
-| Database | PostgreSQL |
-| ORM | Drizzle ORM |
-| Styling | Tailwind CSS |
-| Email provider | Resend |
-| Auth | Local admin auth, Argon2id password hashes |
-| Sessions | Secure server-side sessions stored in PostgreSQL |
-| Jobs | PostgreSQL-backed queue with row locking |
-| Tests | Vitest |
+| Area           | Choice                                           |
+| -------------- | ------------------------------------------------ |
+| Web            | Next.js App Router                               |
+| Language       | TypeScript strict mode                           |
+| Database       | PostgreSQL                                       |
+| ORM            | Drizzle ORM                                      |
+| Styling        | Tailwind CSS                                     |
+| Email provider | Resend                                           |
+| Auth           | Local admin auth, Argon2id password hashes       |
+| Sessions       | Secure server-side sessions stored in PostgreSQL |
+| Jobs           | PostgreSQL-backed queue with row locking         |
+| Tests          | Vitest                                           |
 
 ## Architecture
 
@@ -239,29 +239,29 @@ The CLI reset command:
 
 `.env.example` contains the full list. Common values:
 
-| Variable | Required | Description |
-| --- | --- | --- |
-| `DATABASE_URL` | yes | PostgreSQL connection string. Put local overrides in `.env.local`. |
-| `APP_NAME` | yes | Display name. Default: `Mail Ninja`. |
-| `APP_BASE_URL` | yes | Base URL used for links and webhook display. |
-| `APP_TIMEZONE` | yes | Default application timezone. |
-| `SESSION_SECRET` | yes | Long random secret for session security. |
-| `SESSION_TTL_HOURS` | yes | Admin session lifetime. |
-| `INITIAL_ADMIN_EMAIL` | bootstrap | Admin email used by seed/CLI. |
-| `INITIAL_ADMIN_PASSWORD` | bootstrap | Admin password used by seed/CLI. |
-| `INITIAL_ADMIN_NAME` | bootstrap | Admin display name used by seed/CLI. |
-| `RESEND_API_KEY` | sending | Resend API key. |
-| `RESEND_WEBHOOK_SECRET` | webhooks | Resend webhook verification secret. |
-| `DEFAULT_FROM_NAME` | sending | Default sender name. |
-| `DEFAULT_FROM_EMAIL` | sending | Default sender email. |
-| `DEFAULT_REPLY_TO` | optional | Default reply-to email. |
-| `MAX_IMPORT_FILE_SIZE_MB` | yes | Upload limit for imports. |
-| `MAX_IMPORT_ROWS` | yes | Import row limit. |
-| `IMPORT_RETENTION_DAYS` | yes | Retention window for raw import data. |
-| `WORKER_ID` | worker | Worker identity for job locks. |
-| `WORKER_CONCURRENCY` | worker | Number of jobs claimed per poll. |
-| `JOB_POLL_INTERVAL_MS` | worker | Worker polling interval. |
-| `JOB_LOCK_TIMEOUT_MINUTES` | worker | Stale job lock timeout. |
+| Variable                   | Required  | Description                                                        |
+| -------------------------- | --------- | ------------------------------------------------------------------ |
+| `DATABASE_URL`             | yes       | PostgreSQL connection string. Put local overrides in `.env.local`. |
+| `APP_NAME`                 | yes       | Display name. Default: `Mail Ninja`.                               |
+| `APP_BASE_URL`             | yes       | Base URL used for links and webhook display.                       |
+| `APP_TIMEZONE`             | yes       | Default application timezone.                                      |
+| `SESSION_SECRET`           | yes       | Long random secret for session security.                           |
+| `SESSION_TTL_HOURS`        | yes       | Admin session lifetime.                                            |
+| `INITIAL_ADMIN_EMAIL`      | bootstrap | Admin email used by seed/CLI.                                      |
+| `INITIAL_ADMIN_PASSWORD`   | bootstrap | Admin password used by seed/CLI.                                   |
+| `INITIAL_ADMIN_NAME`       | bootstrap | Admin display name used by seed/CLI.                               |
+| `RESEND_API_KEY`           | sending   | Resend API key.                                                    |
+| `RESEND_WEBHOOK_SECRET`    | webhooks  | Resend webhook verification secret.                                |
+| `DEFAULT_FROM_NAME`        | sending   | Default sender name.                                               |
+| `DEFAULT_FROM_EMAIL`       | sending   | Default sender email.                                              |
+| `DEFAULT_REPLY_TO`         | optional  | Default reply-to email.                                            |
+| `MAX_IMPORT_FILE_SIZE_MB`  | yes       | Upload limit for imports.                                          |
+| `MAX_IMPORT_ROWS`          | yes       | Import row limit.                                                  |
+| `IMPORT_RETENTION_DAYS`    | yes       | Retention window for raw import data.                              |
+| `WORKER_ID`                | worker    | Worker identity for job locks.                                     |
+| `WORKER_CONCURRENCY`       | worker    | Number of jobs claimed per poll.                                   |
+| `JOB_POLL_INTERVAL_MS`     | worker    | Worker polling interval.                                           |
+| `JOB_LOCK_TIMEOUT_MINUTES` | worker    | Stale job lock timeout.                                            |
 
 Do not commit production secrets.
 
@@ -289,6 +289,20 @@ The generated file is `docs/database-structure.sql`. Check that it is still in s
 
 ```bash
 npm run db:structure:check
+```
+
+Create a single SQL seed file for a fresh database:
+
+```bash
+npm run db:seed-sql
+```
+
+The generated file is `docs/database-seed.sql`. Apply it after `docs/database-structure.sql` when setting up a database manually. It creates the default workspace and default administrator. Change the default administrator password immediately after first login.
+
+Check that the seed SQL is current:
+
+```bash
+npm run db:seed-sql:check
 ```
 
 Seed bootstrap data:
@@ -411,10 +425,10 @@ From there you can add any number of API keys. Each key has:
 
 Supported routing strategies:
 
-| Strategy | Behavior |
-| --- | --- |
+| Strategy     | Behavior                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------- |
 | `Sequential` | Uses active keys in routing order and lower usage count first. Good for controlled quota consumption. |
-| `Parallel` | Distributes operations across active keys. Good for spreading throughput across multiple keys. |
+| `Parallel`   | Distributes operations across active keys. Good for spreading throughput across multiple keys.        |
 
 Set the strategy in:
 
@@ -424,9 +438,9 @@ Settings -> Sender Settings -> API key routing
 
 Provider analytics modes:
 
-| Mode | Behavior |
-| --- | --- |
-| `Combined` | Campaign analytics show all provider keys together. |
+| Mode         | Behavior                                                                                                                                |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `Combined`   | Campaign analytics show all provider keys together.                                                                                     |
 | `By API key` | Campaign analytics include a provider key breakdown for sent, delivered, opened, clicked, bounced, complained, and unsubscribed events. |
 
 Set the metrics mode in:
@@ -471,22 +485,24 @@ docker compose run --rm web node --env-file=.env --import tsx src/db/migrate.ts
 
 ## Scripts
 
-| Command | Description |
-| --- | --- |
-| `npm run dev` | Start the Next.js development server. |
-| `npm run build` | Build the production web app. |
-| `npm run start` | Start the built web app. |
-| `npm run worker` | Start the worker process. |
-| `npm run db:generate` | Generate Drizzle migrations. |
-| `npm run db:migrate` | Apply migrations using the current shell env. |
-| `npm run db:structure` | Generate `docs/database-structure.sql` from all migrations. |
-| `npm run db:structure:check` | Verify that `docs/database-structure.sql` is up to date. |
-| `npm run db:seed` | Seed bootstrap workspace/admin data. |
-| `npm run admin:create` | Create an admin from env values. |
-| `npm run admin:reset-password` | Reset an admin password from env values. |
-| `npm run typecheck` | Run TypeScript checks. |
-| `npm run test` | Run Vitest tests. |
-| `npm run test:e2e` | Run Playwright tests. |
+| Command                        | Description                                                 |
+| ------------------------------ | ----------------------------------------------------------- |
+| `npm run dev`                  | Start the Next.js development server.                       |
+| `npm run build`                | Build the production web app.                               |
+| `npm run start`                | Start the built web app.                                    |
+| `npm run worker`               | Start the worker process.                                   |
+| `npm run db:generate`          | Generate Drizzle migrations.                                |
+| `npm run db:migrate`           | Apply migrations using the current shell env.               |
+| `npm run db:structure`         | Generate `docs/database-structure.sql` from all migrations. |
+| `npm run db:structure:check`   | Verify that `docs/database-structure.sql` is up to date.    |
+| `npm run db:seed`              | Seed bootstrap workspace/admin data.                        |
+| `npm run db:seed-sql`          | Generate `docs/database-seed.sql` for manual setup.         |
+| `npm run db:seed-sql:check`    | Verify that `docs/database-seed.sql` is up to date.         |
+| `npm run admin:create`         | Create an admin from env values.                            |
+| `npm run admin:reset-password` | Reset an admin password from env values.                    |
+| `npm run typecheck`            | Run TypeScript checks.                                      |
+| `npm run test`                 | Run Vitest tests.                                           |
+| `npm run test:e2e`             | Run Playwright tests.                                       |
 
 For scripts that need `.env.local`, use the explicit Node form:
 
@@ -498,21 +514,21 @@ node --env-file=.env --env-file=.env.local --import tsx src/worker/index.ts
 
 ## Main Routes
 
-| Route | Purpose |
-| --- | --- |
-| `/login` | Administrator login |
-| `/dashboard` | Global dashboard |
-| `/campaigns` | Campaign list |
-| `/campaigns/new` | New campaign |
-| `/recipients` | Recipient list |
-| `/imports` | Import list |
-| `/imports/new` | Upload CSV import |
-| `/suppressions` | Suppression management |
-| `/events` | Technical event explorer |
-| `/jobs` | Job inspection |
-| `/settings` | App and Resend settings |
-| `/settings/providers` | Provider API key pool |
-| `/settings/admins` | Administrator management |
+| Route                 | Purpose                  |
+| --------------------- | ------------------------ |
+| `/login`              | Administrator login      |
+| `/dashboard`          | Global dashboard         |
+| `/campaigns`          | Campaign list            |
+| `/campaigns/new`      | New campaign             |
+| `/recipients`         | Recipient list           |
+| `/imports`            | Import list              |
+| `/imports/new`        | Upload CSV import        |
+| `/suppressions`       | Suppression management   |
+| `/events`             | Technical event explorer |
+| `/jobs`               | Job inspection           |
+| `/settings`           | App and Resend settings  |
+| `/settings/providers` | Provider API key pool    |
+| `/settings/admins`    | Administrator management |
 
 ## Health Checks
 
