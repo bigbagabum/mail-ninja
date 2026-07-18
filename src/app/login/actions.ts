@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import type { TranslationKey } from "@/lib/i18n";
 import { login, logout } from "@/server/auth/session";
 
 const loginSchema = z.object({
@@ -9,11 +10,11 @@ const loginSchema = z.object({
   password: z.string().min(1)
 });
 
-export async function loginAction(_: { error?: string } | undefined, formData: FormData) {
+export async function loginAction(_: { error?: TranslationKey } | undefined, formData: FormData) {
   const parsed = loginSchema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) return { error: "Invalid email or password." };
+  if (!parsed.success) return { error: "authInvalidCredentials" as const };
   const result = await login(parsed.data.email, parsed.data.password);
-  if (!result.ok) return { error: "Invalid email or password." };
+  if (!result.ok) return { error: "authInvalidCredentials" as const };
   redirect("/dashboard");
 }
 
