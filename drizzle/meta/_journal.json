@@ -36,6 +36,13 @@
       "when": 1784237600000,
       "tag": "0004_provider_account_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784380000000,
+      "tag": "0005_recipient_tags",
+      "breakpoints": true
     }
   ]
 }
