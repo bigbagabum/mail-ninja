@@ -15,18 +15,29 @@ import {
 const nav = [
   ["/dashboard", "Dashboard"],
   ["/campaigns", "Campaigns"],
-  ["/recipients", "Recipients"],
-  ["/imports", "Imports"],
-  ["/suppressions", "Exclusions"],
+  ["/recipients", "Audience"],
   ["/events", "Events"],
   ["/jobs", "Jobs"],
   ["/settings", "Settings"],
-  ["/settings/tags", "Tags"],
   ["/settings/providers", "Provider Keys"],
   ["/settings/admins", "Admins"],
 ] as const;
 
+const audiencePaths = [
+  "/recipients",
+  "/imports",
+  "/suppressions",
+  "/settings/tags",
+];
+
 function activeHref(pathname: string) {
+  if (
+    audiencePaths.some(
+      (href) => pathname === href || pathname.startsWith(`${href}/`),
+    )
+  ) {
+    return "/recipients";
+  }
   return nav
     .map(([href]) => href)
     .filter((href) => pathname === href || pathname.startsWith(`${href}/`))
