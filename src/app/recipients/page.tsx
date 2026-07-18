@@ -78,12 +78,9 @@ export default async function RecipientsPage() {
       />
       {tagTablesMissing ? (
         <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-          Recipient tags are not available because the database migration
-          <code className="mx-1 rounded bg-white px-1">
-            0005_recipient_tags.sql
-          </code>
-          has not been applied on this database yet. Recipients can still be
-          viewed and added without tags.
+          Recipient tags are temporarily unavailable because this feature is not
+          fully configured. Recipients can still be viewed and added without
+          tags.
         </div>
       ) : null}
       <form
@@ -133,7 +130,7 @@ export default async function RecipientsPage() {
           {tags.length === 0 ? (
             <p className="text-sm text-muted">
               {tagTablesMissing ? (
-                "Tags will appear here after the recipient tags migration is applied."
+                "Tags will appear here after this feature is configured."
               ) : (
                 <>
                   No tags yet.{" "}

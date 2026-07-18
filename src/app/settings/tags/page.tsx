@@ -47,24 +47,12 @@ export default async function RecipientTagsPage() {
       {tagTablesMissing ? (
         <section className="rounded border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
           <h2 className="font-semibold">
-            Recipient tags need a database migration
+            Recipient tags are temporarily unavailable
           </h2>
           <p className="mt-2">
-            The application is deployed, but this database does not have the
-            recipient tag tables yet. Apply
-            <code className="mx-1 rounded bg-white px-1">
-              drizzle/0005_recipient_tags.sql
-            </code>
-            in Supabase SQL editor, then reload this page.
+            The database setup for this feature is incomplete. Please contact
+            the application administrator, then reload this page.
           </p>
-          <div className="mt-4 rounded border border-amber-200 bg-white p-3">
-            <div className="text-xs font-semibold uppercase text-muted">
-              Required tables
-            </div>
-            <code className="mt-1 block">
-              recipient_tags, recipient_tag_assignments
-            </code>
-          </div>
         </section>
       ) : null}
       {!tagTablesMissing ? (
