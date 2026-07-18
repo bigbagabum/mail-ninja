@@ -1,4 +1,4 @@
-import { count, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { recipientTagAssignments, recipientTags } from "@/db/schema";
 import { isMissingRecipientTagTableError } from "@/lib/db-errors";
@@ -20,24 +20,22 @@ export default async function RecipientTagsPage() {
     recipientCount: number;
   }> = [];
   try {
-    tags = await db
-      .select({
-        id: recipientTags.id,
-        name: recipientTags.name,
-        slug: recipientTags.slug,
-        color: recipientTags.color,
-        description: recipientTags.description,
-        createdAt: recipientTags.createdAt,
-        recipientCount: count(recipientTagAssignments.id),
-      })
-      .from(recipientTags)
-      .leftJoin(
-        recipientTagAssignments,
-        eq(recipientTagAssignments.tagId, recipientTags.id),
-      )
-      .where(eq(recipientTags.workspaceId, admin.workspaceId))
-      .groupBy(recipientTags.id)
-      .orderBy(desc(recipientTags.createdAt));
+    const tagRows = await db.query.recipientTags.findMany({
+      where: eq(recipientTags.workspaceId, admin.workspaceId),
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+    });
+    const assignments = await db.query.recipientTagAssignments.findMany({
+      where: eq(recipientTagAssignments.workspaceId, admin.workspaceId),
+      columns: { tagId: true },
+    });
+    const counts = new Map<string, number>();
+    for (const assignment of assignments) {
+      counts.set(assignment.tagId, (counts.get(assignment.tagId) ?? 0) + 1);
+    }
+    tags = tagRows.map((tag) => ({
+      ...tag,
+      recipientCount: counts.get(tag.id) ?? 0,
+    }));
   } catch (error) {
     if (!isMissingRecipientTagTableError(error)) throw error;
     tagTablesMissing = true;
