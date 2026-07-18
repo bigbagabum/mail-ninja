@@ -279,6 +279,18 @@ Apply migrations:
 node --env-file=.env --env-file=.env.local --import tsx src/db/migrate.ts
 ```
 
+Create a single SQL structure file for a fresh database or manual SQL editor setup:
+
+```bash
+npm run db:structure
+```
+
+The generated file is `docs/database-structure.sql`. Check that it is still in sync with migrations:
+
+```bash
+npm run db:structure:check
+```
+
 Seed bootstrap data:
 
 ```bash
@@ -467,6 +479,8 @@ docker compose run --rm web node --env-file=.env --import tsx src/db/migrate.ts
 | `npm run worker` | Start the worker process. |
 | `npm run db:generate` | Generate Drizzle migrations. |
 | `npm run db:migrate` | Apply migrations using the current shell env. |
+| `npm run db:structure` | Generate `docs/database-structure.sql` from all migrations. |
+| `npm run db:structure:check` | Verify that `docs/database-structure.sql` is up to date. |
 | `npm run db:seed` | Seed bootstrap workspace/admin data. |
 | `npm run admin:create` | Create an admin from env values. |
 | `npm run admin:reset-password` | Reset an admin password from env values. |
