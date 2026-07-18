@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { campaignWaves } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
-import { PageHeader, Badge, InfoNote } from "@/components/ui";
+import { PageHeader, Badge, HelpHint, InfoNote } from "@/components/ui";
 import { createWaveAction } from "../../actions";
 
 export default async function WavesPage({
@@ -67,7 +67,10 @@ export default async function WavesPage({
             />
           </label>
           <label className="text-sm font-medium">
-            Position
+            <span className="inline-flex items-center gap-1.5">
+              Position
+              <HelpHint label="The send order for this wave. Position 1 goes first, then 2, then 3." />
+            </span>
             <input
               name="position"
               type="number"
@@ -77,7 +80,10 @@ export default async function WavesPage({
             />
           </label>
           <label className="text-sm font-medium">
-            Recipient limit
+            <span className="inline-flex items-center gap-1.5">
+              Recipient limit
+              <HelpHint label="How many recipients go into this wave. Leave empty for all remaining recipients." />
+            </span>
             <input
               name="recipientLimit"
               type="number"

@@ -79,3 +79,15 @@ export function InfoNote({ children }: { children: ReactNode }) {
     </div>
   );
 }
+
+export function HelpHint({ label }: { label: string }) {
+  return (
+    <span
+      className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-line bg-white text-[11px] font-semibold text-muted"
+      title={label}
+      aria-label={label}
+    >
+      i
+    </span>
+  );
+}
