@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
@@ -10,11 +10,11 @@ import {
   campaignRecipients,
   campaignVariants,
   campaignWaves,
-  jobs,
   recipients,
 } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
+import { prepareCampaign } from "@/server/campaigns/prepare";
 import { hasUnsubscribeLink } from "@/lib/templates";
 
 function slugifyCampaignKey(value: string) {
@@ -66,15 +66,13 @@ export async function createCampaignAction(formData: FormData) {
       createdBy: admin.id,
     })
     .returning();
-  await db
-    .insert(auditLogs)
-    .values({
-      workspaceId: admin.workspaceId,
-      adminUserId: admin.id,
-      action: "campaign_creation",
-      entityType: "campaign",
-      entityId: campaign.id,
-    });
+  await db.insert(auditLogs).values({
+    workspaceId: admin.workspaceId,
+    adminUserId: admin.id,
+    action: "campaign_creation",
+    entityType: "campaign",
+    entityId: campaign.id,
+  });
   redirect(`/campaigns/${campaign.id}`);
 }
 
@@ -196,101 +194,79 @@ export async function prepareCampaignByIdAction(campaignId: string) {
     const parsedCampaignId = z.string().uuid().safeParse(campaignId);
     if (!parsedCampaignId.success)
       return { ok: false as const, error: "Invalid campaign ID." };
-    const result = await db.transaction(async (tx) => {
-      const campaign = await tx.query.campaigns.findFirst({
-        where: eq(campaigns.id, parsedCampaignId.data),
-      });
-      if (!campaign || campaign.workspaceId !== admin.workspaceId) {
-        return { ok: false as const, error: "Campaign not found." };
-      }
-      if (!["draft", "preparing"].includes(campaign.status)) {
-        return {
-          ok: false as const,
-          error: `Campaign cannot be prepared while it is ${campaign.status}.`,
-        };
-      }
-      const existingPrepared = await tx.query.campaignRecipients.findFirst({
-        where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
-      });
-      if (existingPrepared) {
-        return {
-          ok: true as const,
-          message: "Campaign already has prepared recipients.",
-        };
-      }
-      const variants = await tx.query.campaignVariants.findMany({
-        where: eq(campaignVariants.campaignId, parsedCampaignId.data),
-      });
-      if (!variants.some((variant) => variant.isFallback)) {
-        return {
-          ok: false as const,
-          error: "Add at least one fallback variant before preparation.",
-        };
-      }
-      if (
-        campaign.campaignType !== "service_update" &&
-        !variants.some((variant) =>
-          hasUnsubscribeLink(variant.htmlContent, variant.textContent),
-        )
-      ) {
-        return {
-          ok: false as const,
-          error:
-            "Marketing, newsletter and announcement campaigns require an unsubscribe link.",
-        };
-      }
-      const wave = await tx.query.campaignWaves.findFirst({
-        where: eq(campaignWaves.campaignId, parsedCampaignId.data),
-      });
-      if (!wave) {
-        return {
-          ok: false as const,
-          error: "Add at least one campaign wave before preparation.",
-        };
-      }
-      const recipient = await tx.query.recipients.findFirst({
-        where: eq(recipients.workspaceId, admin.workspaceId),
-      });
-      if (!recipient) {
-        return {
-          ok: false as const,
-          error: "Add or import recipients before preparing a campaign.",
-        };
-      }
-      const alreadyQueued = await tx.query.jobs.findFirst({
-        where: and(
-          eq(jobs.workspaceId, admin.workspaceId),
-          eq(jobs.type, "prepare_campaign"),
-          inArray(jobs.status, ["pending", "running", "retrying"]),
-          sql`${jobs.payload}->>'campaignId' = ${parsedCampaignId.data}`,
-        ),
-      });
-      if (alreadyQueued) {
-        return {
-          ok: true as const,
-          message: "Campaign preparation is already queued.",
-        };
-      }
-      await tx
-        .update(campaigns)
-        .set({ status: "preparing", updatedAt: new Date() })
-        .where(eq(campaigns.id, parsedCampaignId.data));
-      await tx.insert(jobs).values({
-        workspaceId: admin.workspaceId,
-        type: "prepare_campaign",
-        payload: { campaignId: parsedCampaignId.data },
-        priority: 20,
-      });
-      await tx.insert(auditLogs).values({
-        workspaceId: admin.workspaceId,
-        adminUserId: admin.id,
-        action: "campaign_preparation",
-        entityType: "campaign",
-        entityId: parsedCampaignId.data,
-      });
-      return { ok: true as const, message: "Campaign preparation queued." };
+    const campaign = await db.query.campaigns.findFirst({
+      where: eq(campaigns.id, parsedCampaignId.data),
     });
-    return result;
+    if (!campaign || campaign.workspaceId !== admin.workspaceId) {
+      return { ok: false as const, error: "Campaign not found." };
+    }
+    if (!["draft", "preparing"].includes(campaign.status)) {
+      return {
+        ok: false as const,
+        error: `Campaign cannot be prepared while it is ${campaign.status}.`,
+      };
+    }
+    const existingPrepared = await db.query.campaignRecipients.findFirst({
+      where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
+    });
+    if (existingPrepared) {
+      return {
+        ok: true as const,
+        message: "Campaign already has prepared recipients.",
+      };
+    }
+    const variants = await db.query.campaignVariants.findMany({
+      where: eq(campaignVariants.campaignId, parsedCampaignId.data),
+    });
+    if (!variants.some((variant) => variant.isFallback)) {
+      return {
+        ok: false as const,
+        error: "Add at least one fallback variant before preparation.",
+      };
+    }
+    if (
+      campaign.campaignType !== "service_update" &&
+      !variants.some((variant) =>
+        hasUnsubscribeLink(variant.htmlContent, variant.textContent),
+      )
+    ) {
+      return {
+        ok: false as const,
+        error:
+          "Marketing, newsletter and announcement campaigns require an unsubscribe link.",
+      };
+    }
+    const wave = await db.query.campaignWaves.findFirst({
+      where: eq(campaignWaves.campaignId, parsedCampaignId.data),
+    });
+    if (!wave) {
+      return {
+        ok: false as const,
+        error: "Add at least one campaign wave before preparation.",
+      };
+    }
+    const recipient = await db.query.recipients.findFirst({
+      where: eq(recipients.workspaceId, admin.workspaceId),
+    });
+    if (!recipient) {
+      return {
+        ok: false as const,
+        error: "Add or import recipients before preparing a campaign.",
+      };
+    }
+    const { preparedCount } = await prepareCampaign(parsedCampaignId.data);
+    await db.insert(auditLogs).values({
+      workspaceId: admin.workspaceId,
+      adminUserId: admin.id,
+      action: "campaign_preparation",
+      entityType: "campaign",
+      entityId: parsedCampaignId.data,
+      metadata: { mode: "inline", preparedCount },
+    });
+    return {
+      ok: true as const,
+      message: `Campaign prepared with ${preparedCount} recipients.`,
+    };
   } catch (caught) {
     const message =
       caught instanceof Error ? caught.message : "Campaign preparation failed.";

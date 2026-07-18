@@ -40,7 +40,7 @@ export default async function CampaignRecipientsPage({
               campaign.status === "draft"
                 ? "Recipients appear here after the campaign is prepared. Add a fallback variant, configure waves, then prepare the campaign."
                 : campaign.status === "preparing"
-                  ? "Preparation is queued or running. Start the worker locally with npm run worker:local, then refresh this page or check Jobs."
+                  ? "Preparation is still running. Refresh this page in a moment."
                   : "Preparation completed without campaign recipients. Check recipient filters, suppressions, variants, and wave configuration."
             }
           />
@@ -62,9 +62,6 @@ export default async function CampaignRecipientsPage({
               className="text-accent hover:underline"
             >
               Check waves
-            </Link>
-            <Link href="/jobs" className="text-accent hover:underline">
-              Open jobs
             </Link>
           </div>
         </div>
