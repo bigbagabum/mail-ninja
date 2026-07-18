@@ -11,6 +11,16 @@ import { requireAdmin } from "@/server/auth/session";
 import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 import { addRecipientAction } from "./actions";
 
+function isMissingTagTableError(error: unknown) {
+  const text =
+    error instanceof Error ? `${error.message} ${error.cause}` : String(error);
+  return (
+    text.includes("42P01") ||
+    text.includes("recipient_tags") ||
+    text.includes("recipient_tag_assignments")
+  );
+}
+
 export default async function RecipientsPage() {
   const admin = await requireAdmin();
   const rows = await db.query.recipients.findMany({
@@ -18,33 +28,46 @@ export default async function RecipientsPage() {
     limit: 100,
     orderBy: (table, { desc }) => [desc(table.createdAt)],
   });
-  const tags = await db.query.recipientTags.findMany({
-    where: eq(recipientTags.workspaceId, admin.workspaceId),
-    orderBy: (table, { asc }) => [asc(table.name)],
-  });
-  const assignments = rows.length
-    ? await db
-        .select({
-          recipientId: recipientTagAssignments.recipientId,
-          name: recipientTags.name,
-          slug: recipientTags.slug,
-          color: recipientTags.color,
-        })
-        .from(recipientTagAssignments)
-        .innerJoin(
-          recipientTags,
-          eq(recipientTagAssignments.tagId, recipientTags.id),
-        )
-        .where(
-          and(
-            eq(recipientTagAssignments.workspaceId, admin.workspaceId),
-            inArray(
-              recipientTagAssignments.recipientId,
-              rows.map((row) => row.id),
+  let tagTablesMissing = false;
+  let tags: (typeof recipientTags.$inferSelect)[] = [];
+  let assignments: Array<{
+    recipientId: string;
+    name: string;
+    slug: string;
+    color: string;
+  }> = [];
+  try {
+    tags = await db.query.recipientTags.findMany({
+      where: eq(recipientTags.workspaceId, admin.workspaceId),
+      orderBy: (table, { asc }) => [asc(table.name)],
+    });
+    assignments = rows.length
+      ? await db
+          .select({
+            recipientId: recipientTagAssignments.recipientId,
+            name: recipientTags.name,
+            slug: recipientTags.slug,
+            color: recipientTags.color,
+          })
+          .from(recipientTagAssignments)
+          .innerJoin(
+            recipientTags,
+            eq(recipientTagAssignments.tagId, recipientTags.id),
+          )
+          .where(
+            and(
+              eq(recipientTagAssignments.workspaceId, admin.workspaceId),
+              inArray(
+                recipientTagAssignments.recipientId,
+                rows.map((row) => row.id),
+              ),
             ),
-          ),
-        )
-    : [];
+          )
+      : [];
+  } catch (error) {
+    if (!isMissingTagTableError(error)) throw error;
+    tagTablesMissing = true;
+  }
   const tagsByRecipient = new Map<string, typeof assignments>();
   for (const assignment of assignments) {
     const current = tagsByRecipient.get(assignment.recipientId) ?? [];
@@ -62,6 +85,16 @@ export default async function RecipientsPage() {
           </>
         }
       />
+      {tagTablesMissing ? (
+        <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Recipient tags are not available because the database migration
+          <code className="mx-1 rounded bg-white px-1">
+            0005_recipient_tags.sql
+          </code>
+          has not been applied on this database yet. Recipients can still be
+          viewed and added without tags.
+        </div>
+      ) : null}
       <form
         action={addRecipientAction}
         className="mb-6 grid gap-4 rounded border border-line bg-white p-4"
@@ -108,14 +141,20 @@ export default async function RecipientsPage() {
           </legend>
           {tags.length === 0 ? (
             <p className="text-sm text-muted">
-              No tags yet.{" "}
-              <Link
-                href="/settings/tags"
-                className="text-accent hover:underline"
-              >
-                Create recipient tags
-              </Link>{" "}
-              to segment people like in Mailchimp.
+              {tagTablesMissing ? (
+                "Tags will appear here after the recipient tags migration is applied."
+              ) : (
+                <>
+                  No tags yet.{" "}
+                  <Link
+                    href="/settings/tags"
+                    className="text-accent hover:underline"
+                  >
+                    Create recipient tags
+                  </Link>{" "}
+                  to segment people like in Mailchimp.
+                </>
+              )}
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
