@@ -233,10 +233,11 @@ export async function prepareCampaignByIdAction(campaignId: string) {
     const variants = await db.query.campaignVariants.findMany({
       where: eq(campaignVariants.campaignId, parsedCampaignId.data),
     });
-    if (!variants.some((variant) => variant.isFallback)) {
+    if (variants.length === 0) {
       return {
         ok: false as const,
-        error: "Add at least one fallback variant before preparation.",
+        error:
+          "Create or choose at least one email template before preparation.",
       };
     }
     if (

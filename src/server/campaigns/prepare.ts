@@ -25,13 +25,14 @@ export async function prepareCampaign(campaignId: string) {
   }
   const variants = await db.query.campaignVariants.findMany({
     where: eq(campaignVariants.campaignId, campaignId),
+    orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
   });
   const waves = await db.query.campaignWaves.findMany({
     where: eq(campaignWaves.campaignId, campaignId),
     orderBy: (table, { asc }) => [asc(table.position)],
   });
-  if (!variants.some((variant) => variant.isFallback)) {
-    throw new Error("Fallback variant is required.");
+  if (variants.length === 0) {
+    throw new Error("At least one email template is required.");
   }
   if (waves.length === 0) throw new Error("At least one wave is required.");
   const filters = parseCampaignRecipientFilters(campaign.metadata);

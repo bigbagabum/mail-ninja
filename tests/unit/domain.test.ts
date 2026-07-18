@@ -27,10 +27,10 @@ describe("domain utilities", () => {
     expect(parseBoolean("maybe")).toBeNull();
   });
 
-  it("resolves variants in the required order", () => {
+  it("resolves templates in the required order", () => {
     const variants = [
       {
-        id: "fallback",
+        id: "default",
         locale: "en",
         recipientRole: "generic",
         isFallback: true,
@@ -57,6 +57,23 @@ describe("domain utilities", () => {
         defaultLocale: "en",
       })?.id,
     ).toBe("role");
+    expect(
+      resolveVariant(
+        [
+          {
+            id: "only",
+            locale: "en",
+            recipientRole: "generic",
+            isFallback: false,
+          },
+        ],
+        {
+          locale: "fr",
+          role: "lead",
+          defaultLocale: "en",
+        },
+      )?.id,
+    ).toBe("only");
   });
 
   it("assigns waves deterministically", () => {

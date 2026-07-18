@@ -43,7 +43,7 @@ export default async function CampaignPage({
     admin.workspaceId,
     recipientFilters,
   );
-  const hasFallback = variants.some((variant) => variant.isFallback);
+  const hasTemplate = variants.length > 0;
   const hasRequiredUnsubscribe =
     campaign.campaignType === "service_update" ||
     variants.some((variant) =>
@@ -57,10 +57,10 @@ export default async function CampaignPage({
       action: "Open settings",
     },
     {
-      label: "Fallback variant exists",
-      ok: hasFallback,
+      label: "Email template selected",
+      ok: hasTemplate,
       href: `/campaigns/${id}/variants`,
-      action: "Add variant",
+      action: "Add template",
     },
     {
       label: "Unsubscribe link requirement",

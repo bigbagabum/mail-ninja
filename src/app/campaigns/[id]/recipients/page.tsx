@@ -38,7 +38,7 @@ export default async function CampaignRecipientsPage({
             }
             detail={
               campaign.status === "draft"
-                ? "Recipients appear here after the campaign is prepared. Add a fallback variant, configure waves, then prepare the campaign."
+                ? "Recipients appear here after the campaign is prepared. Add an email template, configure waves, then prepare the campaign."
                 : campaign.status === "preparing"
                   ? "Preparation is still running. Refresh this page in a moment."
                   : "Preparation completed without campaign recipients. Check recipient filters, suppressions, variants, and wave configuration."
