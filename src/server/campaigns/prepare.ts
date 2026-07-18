@@ -5,10 +5,13 @@ import {
   campaigns,
   campaignVariants,
   campaignWaves,
-  recipients,
   suppressions,
 } from "@/db/schema";
 import { logger } from "@/lib/logger";
+import {
+  loadFilteredRecipients,
+  parseCampaignRecipientFilters,
+} from "@/server/campaigns/recipient-filters";
 import { resolveVariant } from "@/server/campaigns/variants";
 import { assignWave } from "@/server/campaigns/waves";
 
@@ -31,13 +34,8 @@ export async function prepareCampaign(campaignId: string) {
     throw new Error("Fallback variant is required.");
   }
   if (waves.length === 0) throw new Error("At least one wave is required.");
-  const selected = await db.query.recipients.findMany({
-    where: eq(recipients.workspaceId, campaign.workspaceId),
-    orderBy: (table, { asc, desc }) => [
-      desc(table.priorityScore),
-      asc(table.id),
-    ],
-  });
+  const filters = parseCampaignRecipientFilters(campaign.metadata);
+  const selected = await loadFilteredRecipients(campaign.workspaceId, filters);
   const suppressionRows = await db.query.suppressions.findMany({
     where: and(
       eq(suppressions.workspaceId, campaign.workspaceId),
@@ -47,6 +45,14 @@ export async function prepareCampaign(campaignId: string) {
   const suppressionSet = new Set(
     suppressionRows.map((row) => row.normalizedEmail),
   );
+  const eligible = selected.filter(
+    (recipient) => !suppressionSet.has(recipient.normalizedEmail),
+  );
+  if (eligible.length === 0) {
+    throw new Error(
+      "No eligible recipients matched the campaign filters after suppressions.",
+    );
+  }
   let preparedCount = 0;
   await db.transaction(async (tx) => {
     await tx
@@ -54,10 +60,7 @@ export async function prepareCampaign(campaignId: string) {
       .set({ status: "preparing", updatedAt: new Date() })
       .where(eq(campaigns.id, campaignId));
     let index = 0;
-    for (const recipient of selected) {
-      if (suppressionSet.has(recipient.normalizedEmail)) {
-        continue;
-      }
+    for (const recipient of eligible) {
       const variant = resolveVariant(variants, {
         locale: recipient.locale,
         role: recipient.role,
@@ -93,6 +96,7 @@ export async function prepareCampaign(campaignId: string) {
   logger.info("campaign prepared", {
     campaign_id: campaignId,
     prepared_count: preparedCount,
+    filters,
   });
   return { preparedCount };
 }

@@ -15,6 +15,7 @@ import {
 import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
 import { prepareCampaign } from "@/server/campaigns/prepare";
+import { buildCampaignRecipientFilters } from "@/server/campaigns/recipient-filters";
 import { hasUnsubscribeLink } from "@/lib/templates";
 
 function slugifyCampaignKey(value: string) {
@@ -80,6 +81,19 @@ export async function updateCampaignAction(formData: FormData) {
   const admin = await requireAdmin();
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
   const data = campaignSchema.parse(Object.fromEntries(formData));
+  const filterBoolean = (name: string) => {
+    const value = formData.get(name);
+    if (value === "true") return true;
+    if (value === "false") return false;
+    return null;
+  };
+  const recipientFilters = buildCampaignRecipientFilters({
+    tagSlugs: formData.getAll("tagSlugs"),
+    locale: formData.get("filterLocale"),
+    platform: formData.get("filterPlatform"),
+    emailVerified: filterBoolean("filterEmailVerified"),
+    marketingConsent: filterBoolean("filterMarketingConsent"),
+  });
   const existing = await db.query.campaigns.findFirst({
     where: eq(campaigns.id, campaignId),
   });
@@ -94,9 +108,10 @@ export async function updateCampaignAction(formData: FormData) {
         updatedAt: new Date(),
         metadata:
           existing.status === "draft"
-            ? existing.metadata
+            ? { ...existing.metadata, recipientFilters }
             : {
                 ...existing.metadata,
+                recipientFilters,
                 preparationInvalidated: true,
                 preparationInvalidatedAt: new Date().toISOString(),
               },
