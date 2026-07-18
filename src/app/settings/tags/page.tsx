@@ -4,6 +4,7 @@ import { recipientTagAssignments, recipientTags } from "@/db/schema";
 import { isMissingRecipientTagTableError } from "@/lib/db-errors";
 import { tagColorClasses, TAG_COLORS } from "@/lib/tags";
 import { requireAdmin } from "@/server/auth/session";
+import { AudienceNav } from "@/components/audience-nav";
 import { EmptyState, PageHeader } from "@/components/ui";
 import { createRecipientTagAction, deleteRecipientTagAction } from "./actions";
 
@@ -44,6 +45,7 @@ export default async function RecipientTagsPage() {
   return (
     <>
       <PageHeader title="Recipient Tags" />
+      <AudienceNav />
       {tagTablesMissing ? (
         <section className="rounded border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
           <h2 className="font-semibold">

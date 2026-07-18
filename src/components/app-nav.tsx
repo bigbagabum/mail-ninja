@@ -17,7 +17,7 @@ const nav = [
   ["/campaigns", "Campaigns"],
   ["/recipients", "Recipients"],
   ["/imports", "Imports"],
-  ["/suppressions", "Suppressions"],
+  ["/suppressions", "Exclusions"],
   ["/events", "Events"],
   ["/jobs", "Jobs"],
   ["/settings", "Settings"],

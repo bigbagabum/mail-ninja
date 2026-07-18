@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { importRows, imports } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
+import { AudienceNav } from "@/components/audience-nav";
 import { Badge, PageHeader } from "@/components/ui";
 import { analyzeImportAction, applyImportAction } from "../actions";
 
@@ -21,6 +22,7 @@ export default async function ImportDetailPage({
   return (
     <>
       <PageHeader title={imp.originalFilename} />
+      <AudienceNav />
       <div className="grid gap-4 md:grid-cols-5">
         <div className="rounded border border-line bg-white p-4">
           <div className="text-sm text-muted">Status</div>

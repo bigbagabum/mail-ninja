@@ -9,6 +9,7 @@ import {
 import { isMissingRecipientTagTableError } from "@/lib/db-errors";
 import { tagColorClasses } from "@/lib/tags";
 import { requireAdmin } from "@/server/auth/session";
+import { AudienceNav } from "@/components/audience-nav";
 import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
 import { addRecipientAction } from "./actions";
 
@@ -68,7 +69,7 @@ export default async function RecipientsPage() {
   return (
     <>
       <PageHeader
-        title="Recipients"
+        title="Audience Recipients"
         action={
           <>
             <ButtonLink href="/settings/tags">Edit tags</ButtonLink>
@@ -76,6 +77,7 @@ export default async function RecipientsPage() {
           </>
         }
       />
+      <AudienceNav />
       {tagTablesMissing ? (
         <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
           Recipient tags are temporarily unavailable because this feature is not
