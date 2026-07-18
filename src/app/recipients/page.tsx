@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { recipients } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { ButtonLink, EmptyState, PageHeader } from "@/components/ui";
+import { addRecipientAction } from "./actions";
 
 export default async function RecipientsPage() {
   const admin = await requireAdmin();
@@ -11,11 +12,20 @@ export default async function RecipientsPage() {
   return (
     <>
       <PageHeader title="Recipients" action={<ButtonLink href="/imports/new">Import recipients</ButtonLink>} />
+      <form action={addRecipientAction} className="mb-6 grid gap-3 rounded border border-line bg-white p-4 lg:grid-cols-[minmax(180px,1fr)_140px_140px_120px_120px_140px_auto]">
+        <input name="email" type="email" required placeholder="email@example.com" className="rounded border-line text-sm" />
+        <input name="firstName" placeholder="First name" className="rounded border-line text-sm" />
+        <input name="lastName" placeholder="Last name" className="rounded border-line text-sm" />
+        <input name="locale" placeholder="en" className="rounded border-line text-sm" />
+        <input name="role" placeholder="role" className="rounded border-line text-sm" />
+        <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="marketingConsent" value="true" className="rounded border-line" />Consent</label>
+        <button className="rounded bg-accent px-3 py-2 text-sm font-medium text-white">Add recipient</button>
+      </form>
       {rows.length === 0 ? (
         <div className="grid gap-4">
           <EmptyState
             title="No recipients yet"
-            detail="Recipients are added through CSV imports. Start by downloading the recipient template, filling it with emails, then uploading it on the import page."
+            detail="Recipients can be added manually here or imported in bulk through CSV uploads."
           />
           <div className="flex flex-wrap gap-3 text-sm">
             <Link href="/imports/new" className="text-accent hover:underline">Open import page</Link>

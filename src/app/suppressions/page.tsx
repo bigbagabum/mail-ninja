@@ -3,7 +3,7 @@ import { db } from "@/db";
 import { suppressions } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { Badge, PageHeader } from "@/components/ui";
-import { addSuppressionAction } from "./actions";
+import { addSuppressionAction, removeSuppressionAction } from "./actions";
 
 export default async function SuppressionsPage() {
   const admin = await requireAdmin();
@@ -17,7 +17,7 @@ export default async function SuppressionsPage() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="isPermanent" value="true" className="rounded border-line" />Permanent</label>
         <button className="rounded bg-accent px-3 py-2 text-sm font-medium text-white">Add</button>
       </form>
-      <div className="rounded border border-line bg-white"><table className="w-full text-left text-sm"><thead className="bg-panel text-muted"><tr><th className="p-3">Email</th><th>Reason</th><th>Source</th><th>Permanent</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className="border-t border-line"><td className="p-3">{row.email}</td><td>{row.reason}</td><td>{row.source}</td><td>{row.isPermanent ? <Badge tone="warn">permanent</Badge> : <Badge>temporary</Badge>}</td></tr>)}</tbody></table></div>
+      <div className="rounded border border-line bg-white"><table className="w-full text-left text-sm"><thead className="bg-panel text-muted"><tr><th className="p-3">Email</th><th>Reason</th><th>Source</th><th>Permanent</th><th>Actions</th></tr></thead><tbody>{rows.map((row) => <tr key={row.id} className="border-t border-line"><td className="p-3">{row.email}</td><td>{row.reason}</td><td>{row.source}</td><td>{row.isPermanent ? <Badge tone="warn">permanent</Badge> : <Badge>temporary</Badge>}</td><td className="p-3"><form action={removeSuppressionAction} className="flex flex-wrap items-center gap-2"><input type="hidden" name="suppressionId" value={row.id} />{row.isPermanent ? <label className="flex items-center gap-1 text-xs text-muted"><input type="checkbox" name="confirmPermanentRemoval" value="true" className="rounded border-line" />Confirm</label> : null}<button className="rounded border border-red-200 px-2 py-1 text-sm text-danger hover:bg-red-50">Remove</button></form></td></tr>)}</tbody></table></div>
     </>
   );
 }
