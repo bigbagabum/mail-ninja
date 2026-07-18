@@ -57,6 +57,29 @@ There is no Redis requirement. Jobs are claimed from PostgreSQL with row locking
 - Optional: Docker and Docker Compose
 - Optional for real sending: Resend account, verified domain, API key, webhook secret
 
+## Important
+
+For a manual database setup, use the generated SQL files in this order:
+
+1. Run `docs/database-structure.sql`
+2. Run `docs/database-seed.sql`
+3. Sign in with the default administrator
+4. Change the default administrator password immediately
+
+Regenerate these files after schema or seed changes:
+
+```bash
+npm run db:structure
+npm run db:seed-sql
+```
+
+Verify they are current before publishing or deploying:
+
+```bash
+npm run db:structure:check
+npm run db:seed-sql:check
+```
+
 ## Quick Start
 
 ```bash
