@@ -14,10 +14,26 @@ export function slugifyTag(input: string) {
     .trim()
     .toLowerCase()
     .replace(/['"]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/[^\p{L}\p{N}]+/gu, "-")
     .replace(/^-+|-+$/g, "")
     .replace(/-{2,}/g, "-");
   return slug || null;
+}
+
+export function parseTagList(input: unknown) {
+  if (typeof input !== "string") return [];
+  const seen = new Set<string>();
+  return input
+    .split(/[;,|]/)
+    .map((name) => name.trim())
+    .filter(Boolean)
+    .map((name) => ({ name, slug: slugifyTag(name) }))
+    .filter((tag): tag is { name: string; slug: string } => Boolean(tag.slug))
+    .filter((tag) => {
+      if (seen.has(tag.slug)) return false;
+      seen.add(tag.slug);
+      return true;
+    });
 }
 
 export function isTagColor(input: string): input is TagColor {

@@ -1,18 +1,81 @@
 export const recipientImportColumns = [
-  { name: "email", required: true, type: "string email", description: "Recipient email address. Required." },
-  { name: "external_id", required: false, type: "string", description: "Stable ID from the source system." },
-  { name: "first_name", required: false, type: "string", description: "Recipient first name." },
-  { name: "last_name", required: false, type: "string", description: "Recipient last name." },
-  { name: "locale", required: false, type: "string", description: "Locale such as en, de, en-US, de-DE." },
-  { name: "role", required: false, type: "string", description: "Recipient role or segment label." },
-  { name: "platform", required: false, type: "string", description: "Source platform such as web, ios, android." },
-  { name: "email_verified", required: false, type: "boolean", description: "true/false, yes/no, 1/0." },
-  { name: "marketing_consent", required: false, type: "boolean", description: "true/false, yes/no, 1/0." },
-  { name: "last_active_at", required: false, type: "timestamp", description: "ISO timestamp or database timestamp." },
-  { name: "attributes", required: false, type: "json/string", description: "Optional JSON object or source-specific notes." }
+  {
+    name: "email",
+    required: true,
+    type: "string email",
+    description: "Recipient email address. Required.",
+  },
+  {
+    name: "external_id",
+    required: false,
+    type: "string",
+    description: "Stable ID from the source system.",
+  },
+  {
+    name: "first_name",
+    required: false,
+    type: "string",
+    description: "Recipient first name.",
+  },
+  {
+    name: "last_name",
+    required: false,
+    type: "string",
+    description: "Recipient last name.",
+  },
+  {
+    name: "locale",
+    required: false,
+    type: "string",
+    description: "Locale such as en, de, en-US, de-DE.",
+  },
+  {
+    name: "role",
+    required: false,
+    type: "string",
+    description: "Recipient role or segment label.",
+  },
+  {
+    name: "tags",
+    required: false,
+    type: "string list",
+    description: "Recipient tags separated by comma, semicolon or pipe.",
+  },
+  {
+    name: "platform",
+    required: false,
+    type: "string",
+    description: "Source platform such as web, ios, android.",
+  },
+  {
+    name: "email_verified",
+    required: false,
+    type: "boolean",
+    description: "true/false, yes/no, 1/0.",
+  },
+  {
+    name: "marketing_consent",
+    required: false,
+    type: "boolean",
+    description: "true/false, yes/no, 1/0.",
+  },
+  {
+    name: "last_active_at",
+    required: false,
+    type: "timestamp",
+    description: "ISO timestamp or database timestamp.",
+  },
+  {
+    name: "attributes",
+    required: false,
+    type: "json/string",
+    description: "Optional JSON object or source-specific notes.",
+  },
 ] as const;
 
-export const recipientImportCsvHeader = recipientImportColumns.map((column) => column.name);
+export const recipientImportCsvHeader = recipientImportColumns.map(
+  (column) => column.name,
+);
 
 export const recipientImportSampleRows = [
   [
@@ -22,11 +85,12 @@ export const recipientImportSampleRows = [
     "Example",
     "en",
     "customer",
+    "customer, pro",
     "web",
     "true",
     "true",
     "2026-07-01T12:00:00Z",
-    "{\"plan\":\"pro\",\"country\":\"DE\"}"
+    '{"plan":"pro","country":"DE"}',
   ],
   [
     "maria@example.com",
@@ -35,12 +99,13 @@ export const recipientImportSampleRows = [
     "Example",
     "de",
     "lead",
+    "lead | ios",
     "ios",
     "true",
     "false",
     "2026-06-15T09:30:00Z",
-    "{\"source\":\"newsletter\"}"
-  ]
+    '{"source":"newsletter"}',
+  ],
 ];
 
 function csvEscape(value: string) {
@@ -48,12 +113,19 @@ function csvEscape(value: string) {
 }
 
 export function buildRecipientImportCsvTemplate() {
-  return [recipientImportCsvHeader, ...recipientImportSampleRows].map((row) => row.map(csvEscape).join(",")).join("\n") + "\n";
+  return (
+    [recipientImportCsvHeader, ...recipientImportSampleRows]
+      .map((row) => row.map(csvEscape).join(","))
+      .join("\n") + "\n"
+  );
 }
 
 export function buildRecipientImportStructureText() {
   const columns = recipientImportColumns
-    .map((column) => `${column.name}${column.required ? " REQUIRED" : ""}: ${column.type} - ${column.description}`)
+    .map(
+      (column) =>
+        `${column.name}${column.required ? " REQUIRED" : ""}: ${column.type} - ${column.description}`,
+    )
     .join("\n");
   const sql = `select
   email,
@@ -62,6 +134,7 @@ export function buildRecipientImportStructureText() {
   last_name,
   locale,
   role,
+  tags,
   platform,
   email_verified,
   marketing_consent,

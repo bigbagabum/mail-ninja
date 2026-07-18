@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { normalizeEmail, normalizeLocale, parseBoolean } from "@/lib/normalization";
+import {
+  normalizeEmail,
+  normalizeLocale,
+  parseBoolean,
+} from "@/lib/normalization";
 import { resolveVariant } from "@/server/campaigns/variants";
 import { assignWave } from "@/server/campaigns/waves";
 import { calculateRates } from "@/server/analytics/rates";
@@ -7,10 +11,13 @@ import { normalizeClickedUrl, classifyLink } from "@/server/webhooks/links";
 import { retryBackoffMs } from "@/server/jobs/backoff";
 import { mapResendEventType } from "@/server/webhooks/mapping";
 import { scoreRecipientPriority } from "@/server/imports/priority";
+import { parseTagList } from "@/lib/tags";
 
 describe("domain utilities", () => {
   it("normalizes email without unsafe mailbox transformations", () => {
-    expect(normalizeEmail(" User+Tag@Example.COM ")).toBe("user+tag@example.com");
+    expect(normalizeEmail(" User+Tag@Example.COM ")).toBe(
+      "user+tag@example.com",
+    );
   });
 
   it("normalizes locales and booleans", () => {
@@ -22,28 +29,75 @@ describe("domain utilities", () => {
 
   it("resolves variants in the required order", () => {
     const variants = [
-      { id: "fallback", locale: "en", recipientRole: "generic", isFallback: true },
+      {
+        id: "fallback",
+        locale: "en",
+        recipientRole: "generic",
+        isFallback: true,
+      },
       { id: "role", locale: "en", recipientRole: "admin", isFallback: false },
-      { id: "locale", locale: "de", recipientRole: "generic", isFallback: false }
+      {
+        id: "locale",
+        locale: "de",
+        recipientRole: "generic",
+        isFallback: false,
+      },
     ];
-    expect(resolveVariant(variants, { locale: "de", role: "admin", defaultLocale: "en" })?.id).toBe("locale");
-    expect(resolveVariant(variants, { locale: "fr", role: "admin", defaultLocale: "en" })?.id).toBe("role");
+    expect(
+      resolveVariant(variants, {
+        locale: "de",
+        role: "admin",
+        defaultLocale: "en",
+      })?.id,
+    ).toBe("locale");
+    expect(
+      resolveVariant(variants, {
+        locale: "fr",
+        role: "admin",
+        defaultLocale: "en",
+      })?.id,
+    ).toBe("role");
   });
 
   it("assigns waves deterministically", () => {
-    const waves = [{ id: "a", position: 1, recipientLimit: 2 }, { id: "b", position: 2, recipientLimit: null }];
+    const waves = [
+      { id: "a", position: 1, recipientLimit: 2 },
+      { id: "b", position: 2, recipientLimit: null },
+    ];
     expect(assignWave(0, waves)).toBe("a");
     expect(assignWave(2, waves)).toBe("b");
     expect(assignWave(99, waves)).toBe("b");
   });
 
   it("calculates rates with zero guards", () => {
-    expect(calculateRates({ sent: 0, delivered: 0, uniqueOpened: 0, uniqueClicked: 0, bounced: 0, complained: 0, unsubscribed: 0 }).deliveryRate).toBe(0);
-    expect(calculateRates({ sent: 10, delivered: 8, uniqueOpened: 4, uniqueClicked: 2, bounced: 1, complained: 0, unsubscribed: 1 }).deliveryRate).toBe(0.8);
+    expect(
+      calculateRates({
+        sent: 0,
+        delivered: 0,
+        uniqueOpened: 0,
+        uniqueClicked: 0,
+        bounced: 0,
+        complained: 0,
+        unsubscribed: 0,
+      }).deliveryRate,
+    ).toBe(0);
+    expect(
+      calculateRates({
+        sent: 10,
+        delivered: 8,
+        uniqueOpened: 4,
+        uniqueClicked: 2,
+        bounced: 1,
+        complained: 0,
+        unsubscribed: 1,
+      }).deliveryRate,
+    ).toBe(0.8);
   });
 
   it("normalizes and classifies clicked links", () => {
-    const url = normalizeClickedUrl("https://example.com/reset?token=abc&utm=1#frag");
+    const url = normalizeClickedUrl(
+      "https://example.com/reset?token=abc&utm=1#frag",
+    );
     expect(url).toContain("token=%5Bredacted%5D");
     expect(url).not.toContain("#frag");
     expect(classifyLink(url)).toBe("password_reset");
@@ -63,12 +117,24 @@ describe("domain utilities", () => {
       locale: "en",
       role: "buyer",
       platform: "web",
-      externalId: "user-1"
+      externalId: "user-1",
     });
     expect(high.priorityScore).toBeGreaterThanOrEqual(80);
     expect(high.priorityCohort).toBe("high_intent");
 
-    const low = scoreRecipientPriority({ emailVerified: false, marketingConsent: false, lastActiveAt: null });
+    const low = scoreRecipientPriority({
+      emailVerified: false,
+      marketingConsent: false,
+      lastActiveAt: null,
+    });
     expect(low.priorityCohort).toBe("low_confidence");
+  });
+
+  it("parses imported recipient tags", () => {
+    expect(parseTagList("Paid users, beta | Paid users;VIP")).toEqual([
+      { name: "Paid users", slug: "paid-users" },
+      { name: "beta", slug: "beta" },
+      { name: "VIP", slug: "vip" },
+    ]);
   });
 });
