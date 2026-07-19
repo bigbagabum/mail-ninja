@@ -2,7 +2,9 @@ import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
 import { providerAccounts } from "@/db/schema";
+import { CopyButton } from "@/components/copy-button";
 import { Badge, PageHeader } from "@/components/ui";
+import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth/session";
 import {
   createProviderAccountAction,
@@ -13,6 +15,7 @@ import {
 
 export default async function ProviderAccountsPage() {
   const admin = await requireAdmin();
+  const webhookEndpoint = `${env.APP_BASE_URL.replace(/\/$/, "")}/api/webhooks/resend`;
   const accounts = await db.query.providerAccounts.findMany({
     where: eq(providerAccounts.workspaceId, admin.workspaceId),
     orderBy: (table, { asc }) => [
@@ -32,6 +35,23 @@ export default async function ProviderAccountsPage() {
           </Link>
         }
       />
+      <section className="mb-6 rounded border border-blue-100 bg-blue-50 p-5 text-sm text-blue-950">
+        <h2 className="font-semibold">Resend webhook endpoint</h2>
+        <p className="mt-1">
+          In Resend, create a webhook and set its endpoint URL to this address.
+          The webhook secret from Resend should be saved with the matching API
+          key below.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center">
+          <code className="min-w-0 flex-1 overflow-x-auto rounded border border-blue-100 bg-white px-3 py-2 text-xs text-ink">
+            {webhookEndpoint}
+          </code>
+          <CopyButton value={webhookEndpoint} label="Copy endpoint" />
+        </div>
+        <p className="mt-2 text-xs text-blue-800">
+          The value is built from APP_BASE_URL plus /api/webhooks/resend.
+        </p>
+      </section>
       <section className="rounded border border-line bg-white p-5">
         <h2 className="font-semibold">Add API Key</h2>
         <p className="mt-1 text-sm text-muted">
