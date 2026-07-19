@@ -139,7 +139,6 @@ const variantSchema = z
     previewText: z.string().optional(),
     htmlContent: z.string().min(1),
     textContent: z.string().optional(),
-    isFallback: z.coerce.boolean().optional(),
   })
   .transform((data) => ({
     ...data,
@@ -166,7 +165,7 @@ export async function createVariantAction(formData: FormData) {
         previewText: data.previewText,
         htmlContent: data.htmlContent,
         textContent: data.textContent,
-        isFallback: Boolean(data.isFallback),
+        isFallback: false,
         updatedAt: new Date(),
       })
       .where(eq(campaignVariants.id, data.variantId));
@@ -176,7 +175,7 @@ export async function createVariantAction(formData: FormData) {
   }
   await db
     .insert(campaignVariants)
-    .values({ ...data, isFallback: Boolean(data.isFallback) })
+    .values({ ...data, isFallback: false })
     .onConflictDoUpdate({
       target: [
         campaignVariants.campaignId,
@@ -189,7 +188,7 @@ export async function createVariantAction(formData: FormData) {
         previewText: data.previewText,
         htmlContent: data.htmlContent,
         textContent: data.textContent,
-        isFallback: Boolean(data.isFallback),
+        isFallback: false,
         updatedAt: new Date(),
       },
     });

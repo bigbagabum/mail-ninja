@@ -2,7 +2,6 @@ export type VariantCandidate = {
   id: string;
   locale: string;
   recipientRole: string;
-  isFallback: boolean;
 };
 
 export function resolveVariant(
@@ -15,8 +14,6 @@ export function resolveVariant(
 ) {
   const locale = input.locale ?? input.defaultLocale;
   const role = input.role ?? "generic";
-  const defaultVariant =
-    variants.find((variant) => variant.isFallback) ?? variants[0];
   return (
     variants.find(
       (variant) => variant.locale === locale && variant.recipientRole === role,
@@ -35,7 +32,6 @@ export function resolveVariant(
         variant.locale === input.defaultLocale &&
         variant.recipientRole === "generic",
     ) ??
-    defaultVariant ??
     null
   );
 }

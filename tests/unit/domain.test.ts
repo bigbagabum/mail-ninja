@@ -34,14 +34,12 @@ describe("domain utilities", () => {
         id: "default",
         locale: "en",
         recipientRole: "generic",
-        isFallback: true,
       },
-      { id: "role", locale: "en", recipientRole: "admin", isFallback: false },
+      { id: "role", locale: "en", recipientRole: "admin" },
       {
         id: "locale",
         locale: "de",
         recipientRole: "generic",
-        isFallback: false,
       },
     ];
     expect(
@@ -64,8 +62,7 @@ describe("domain utilities", () => {
           {
             id: "only",
             locale: "en",
-            recipientRole: "generic",
-            isFallback: false,
+            recipientRole: "member",
           },
         ],
         {
@@ -73,8 +70,8 @@ describe("domain utilities", () => {
           role: "lead",
           defaultLocale: "en",
         },
-      )?.id,
-    ).toBe("only");
+      ),
+    ).toBeNull();
   });
 
   it("assigns waves deterministically", () => {

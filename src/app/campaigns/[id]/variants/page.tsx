@@ -5,9 +5,12 @@ import { campaignVariants, emailTemplates } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { EmailTemplateEditor } from "@/components/email-template-editor";
-import { PageHeader, Badge } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 import { createVariantAction } from "../../actions";
-import { attachEmailTemplateToCampaignAction } from "./actions";
+import {
+  attachEmailTemplateToCampaignAction,
+  detachCampaignTemplateAction,
+} from "./actions";
 
 export default async function VariantsPage({
   params,
@@ -71,15 +74,6 @@ export default async function VariantsPage({
               >
                 Add to campaign
               </button>
-              <label className="flex items-center gap-2 text-sm sm:col-span-2">
-                <input
-                  type="checkbox"
-                  name="isFallback"
-                  value="true"
-                  className="rounded border-line"
-                />
-                Use this copy as the default campaign template
-              </label>
             </form>
             {reusableTemplates.length === 0 ? (
               <Link
@@ -98,7 +92,6 @@ export default async function VariantsPage({
                   <th className="p-3">Campaign template</th>
                   <th>Locale</th>
                   <th>Tag / audience</th>
-                  <th>Default</th>
                   <th className="text-right">Actions</th>
                 </tr>
               </thead>
@@ -115,18 +108,26 @@ export default async function VariantsPage({
                     <td className="p-3">{variant.name}</td>
                     <td>{variant.locale}</td>
                     <td>{variant.recipientRole}</td>
-                    <td>
-                      {variant.isFallback ? (
-                        <Badge tone="good">default</Badge>
-                      ) : null}
-                    </td>
                     <td className="text-right">
-                      <Link
-                        href={`/campaigns/${id}/variants?template=${variant.id}`}
-                        className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/campaigns/${id}/variants?template=${variant.id}`}
+                          className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
+                        >
+                          Edit
+                        </Link>
+                        <form action={detachCampaignTemplateAction}>
+                          <input type="hidden" name="campaignId" value={id} />
+                          <input
+                            type="hidden"
+                            name="variantId"
+                            value={variant.id}
+                          />
+                          <button className="rounded border border-red-200 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-red-50">
+                            Detach
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -213,16 +214,6 @@ export default async function VariantsPage({
             initialHtml={selectedTemplate?.htmlContent}
             initialText={selectedTemplate?.textContent}
           />
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              name="isFallback"
-              value="true"
-              defaultChecked={selectedTemplate?.isFallback ?? false}
-              className="rounded border-line"
-            />{" "}
-            Use as default template when no more specific template matches
-          </label>
           <button className="rounded bg-accent px-3 py-2 text-sm font-medium text-white">
             {selectedTemplate ? "Update template" : "Save template"}
           </button>
