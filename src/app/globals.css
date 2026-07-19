@@ -12,12 +12,42 @@ body {
   @apply inline-flex items-center rounded px-2 py-0.5 text-xs font-medium ring-1 ring-inset;
 }
 
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.75rem;
+  vertical-align: middle;
+  line-height: 1.45;
+}
+
+th {
+  font-weight: 600;
+}
+
+td > .status-badge,
+td > form,
+td > a,
+td > button {
+  vertical-align: middle;
+}
+
 .adaptive-glass {
   position: relative;
   color: var(--adaptive-glass-fg, rgba(15, 23, 42, 0.94));
   background:
-    linear-gradient(135deg, var(--adaptive-glass-bg-a, rgba(255, 255, 255, 0.68)), var(--adaptive-glass-bg-b, rgba(255, 255, 255, 0.44))),
-    radial-gradient(circle at 20% 0%, var(--adaptive-glass-bg-c, rgba(20, 184, 166, 0.09)), transparent 42%);
+    linear-gradient(
+      135deg,
+      var(--adaptive-glass-bg-a, rgba(255, 255, 255, 0.68)),
+      var(--adaptive-glass-bg-b, rgba(255, 255, 255, 0.44))
+    ),
+    radial-gradient(
+      circle at 20% 0%,
+      var(--adaptive-glass-bg-c, rgba(20, 184, 166, 0.09)),
+      transparent 42%
+    );
   border-color: var(--adaptive-glass-border, rgba(255, 255, 255, 0.58));
   box-shadow: var(--adaptive-glass-shadow, 0 18px 48px rgba(15, 23, 42, 0.08));
   backdrop-filter: blur(28px) saturate(200%);
@@ -37,13 +67,23 @@ body {
 .adaptive-glass::before {
   top: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.8), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
 }
 
 .adaptive-glass::after {
   bottom: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--adaptive-glass-hairline, rgba(15, 23, 42, 0.1)), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--adaptive-glass-hairline, rgba(15, 23, 42, 0.1)),
+    transparent
+  );
 }
 
 .adaptive-glass-item {
@@ -71,7 +111,10 @@ body {
 .adaptive-glass-active {
   color: var(--adaptive-glass-active-fg, rgba(255, 255, 255, 0.96));
   background: var(--adaptive-glass-active-bg, rgba(15, 23, 42, 0.92));
-  box-shadow: var(--adaptive-glass-active-shadow, 0 12px 28px rgba(15, 23, 42, 0.18));
+  box-shadow: var(
+    --adaptive-glass-active-shadow,
+    0 12px 28px rgba(15, 23, 42, 0.18)
+  );
   text-shadow: none;
 }
 
