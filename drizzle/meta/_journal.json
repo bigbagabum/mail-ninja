@@ -43,6 +43,13 @@
       "when": 1784380000000,
       "tag": "0005_recipient_tags",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1784457600000,
+      "tag": "0006_email_templates",
+      "breakpoints": true
     }
   ]
 }

@@ -1,12 +1,13 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
-import { campaignVariants } from "@/db/schema";
+import { campaignVariants, emailTemplates } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { EmailTemplateEditor } from "@/components/email-template-editor";
 import { PageHeader, Badge } from "@/components/ui";
 import { createVariantAction } from "../../actions";
+import { attachEmailTemplateToCampaignAction } from "./actions";
 
 export default async function VariantsPage({
   params,
@@ -15,12 +16,16 @@ export default async function VariantsPage({
   params: Promise<{ id: string }>;
   searchParams?: Promise<{ template?: string }>;
 }) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const { id } = await params;
   const query = searchParams ? await searchParams : {};
   const rows = await db.query.campaignVariants.findMany({
     where: eq(campaignVariants.campaignId, id),
     orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
+  });
+  const reusableTemplates = await db.query.emailTemplates.findMany({
+    where: eq(emailTemplates.workspaceId, admin.workspaceId),
+    orderBy: (table, { asc }) => [asc(table.name)],
   });
   const selectedTemplate =
     rows.find((variant) => variant.id === query.template) ?? null;
@@ -29,54 +34,110 @@ export default async function VariantsPage({
       <PageHeader title="Email Templates" />
       <CampaignTabs id={id} />
       <div className="grid gap-6 lg:grid-cols-[1fr_520px]">
-        <div className="rounded border border-line bg-white">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-panel text-muted">
-              <tr>
-                <th className="p-3">Template</th>
-                <th>Locale</th>
-                <th>Tag / audience</th>
-                <th>Default</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((variant) => (
-                <tr
-                  key={variant.id}
-                  className={
-                    selectedTemplate?.id === variant.id
-                      ? "border-t border-line bg-teal-50/60"
-                      : "border-t border-line"
-                  }
-                >
-                  <td className="p-3">{variant.name}</td>
-                  <td>{variant.locale}</td>
-                  <td>{variant.recipientRole}</td>
-                  <td>
-                    {variant.isFallback ? (
-                      <Badge tone="good">default</Badge>
-                    ) : null}
-                  </td>
-                  <td className="text-right">
-                    <Link
-                      href={`/campaigns/${id}/variants?template=${variant.id}`}
-                      className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
-                    >
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 ? (
+        <div className="space-y-4">
+          <section className="rounded border border-line bg-white p-4">
+            <h2 className="font-semibold">Use reusable template</h2>
+            <p className="mt-1 text-sm text-muted">
+              Choose a library template and copy it into this campaign. The
+              copied campaign template can then be edited safely for this send.
+            </p>
+            <form
+              action={attachEmailTemplateToCampaignAction}
+              className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
+            >
+              <input type="hidden" name="campaignId" value={id} />
+              <select
+                name="templateId"
+                required
+                className="rounded border-line text-sm"
+                defaultValue=""
+              >
+                <option value="" disabled>
+                  Select reusable template
+                </option>
+                {reusableTemplates.map((template) => (
+                  <option key={template.id} value={template.id}>
+                    {template.name} · {template.locale} ·{" "}
+                    {template.recipientRole}
+                  </option>
+                ))}
+              </select>
+              <button
+                disabled={reusableTemplates.length === 0}
+                className="rounded bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
+              >
+                Add to campaign
+              </button>
+              <label className="flex items-center gap-2 text-sm sm:col-span-2">
+                <input
+                  type="checkbox"
+                  name="isFallback"
+                  value="true"
+                  className="rounded border-line"
+                />
+                Use this copy as the default campaign template
+              </label>
+            </form>
+            {reusableTemplates.length === 0 ? (
+              <Link
+                href="/templates"
+                className="mt-3 inline-flex text-sm font-medium text-accent hover:underline"
+              >
+                Create reusable template
+              </Link>
+            ) : null}
+          </section>
+
+          <div className="rounded border border-line bg-white">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-panel text-muted">
                 <tr>
-                  <td className="p-3 text-muted" colSpan={5}>
-                    No templates yet. Create the first email template here.
-                  </td>
+                  <th className="p-3">Campaign template</th>
+                  <th>Locale</th>
+                  <th>Tag / audience</th>
+                  <th>Default</th>
+                  <th className="text-right">Actions</th>
                 </tr>
-              ) : null}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {rows.map((variant) => (
+                  <tr
+                    key={variant.id}
+                    className={
+                      selectedTemplate?.id === variant.id
+                        ? "border-t border-line bg-teal-50/60"
+                        : "border-t border-line"
+                    }
+                  >
+                    <td className="p-3">{variant.name}</td>
+                    <td>{variant.locale}</td>
+                    <td>{variant.recipientRole}</td>
+                    <td>
+                      {variant.isFallback ? (
+                        <Badge tone="good">default</Badge>
+                      ) : null}
+                    </td>
+                    <td className="text-right">
+                      <Link
+                        href={`/campaigns/${id}/variants?template=${variant.id}`}
+                        className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
+                      >
+                        Edit
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+                {rows.length === 0 ? (
+                  <tr>
+                    <td className="p-3 text-muted" colSpan={5}>
+                      No campaign templates yet. Add one from the reusable
+                      template library or create a campaign-specific template.
+                    </td>
+                  </tr>
+                ) : null}
+              </tbody>
+            </table>
+          </div>
         </div>
         <form
           action={createVariantAction}
@@ -88,14 +149,16 @@ export default async function VariantsPage({
           ) : null}
           <div className="flex items-center justify-between gap-3">
             <h2 className="font-semibold">
-              {selectedTemplate ? "Edit template" : "Create template"}
+              {selectedTemplate
+                ? "Edit campaign template"
+                : "Create campaign-specific template"}
             </h2>
             {selectedTemplate ? (
               <Link
                 href={`/campaigns/${id}/variants`}
                 className="text-sm text-muted hover:text-ink"
               >
-                New template
+                New campaign template
               </Link>
             ) : null}
           </div>

@@ -11,7 +11,7 @@ Mail Ninja is designed to be cloned, configured, rebranded, and deployed as an i
 - Optionally auto-score imported recipients into priority cohorts.
 - Manually override recipient priority for wave ordering.
 - Keep a global suppression list.
-- Create multilingual campaigns and template variants.
+- Create reusable email templates and copy them into campaigns when needed.
 - Prepare campaigns into deterministic sending waves.
 - Store durable background jobs in PostgreSQL.
 - Receive and deduplicate Resend webhook events.

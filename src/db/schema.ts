@@ -259,6 +259,33 @@ export const providerAccounts = pgTable(
   }),
 );
 
+export const emailTemplates = pgTable(
+  "email_templates",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspaces.id, { onDelete: "cascade" })
+      .notNull(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    description: text("description"),
+    locale: text("locale").notNull().default("en"),
+    recipientRole: text("recipient_role").notNull().default("generic"),
+    subject: text("subject").notNull(),
+    previewText: text("preview_text"),
+    htmlContent: text("html_content").notNull(),
+    textContent: text("text_content"),
+    createdBy: uuid("created_by").references(() => adminUsers.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (table) => ({
+    workspaceIdx: index("email_templates_workspace_idx").on(table.workspaceId),
+    uniqSlug: unique().on(table.workspaceId, table.slug),
+  }),
+);
+
 export const recipients = pgTable(
   "recipients",
   {
