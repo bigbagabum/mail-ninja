@@ -15,6 +15,7 @@ import {
 const nav = [
   ["/dashboard", "Dashboard"],
   ["/campaigns", "Campaigns"],
+  ["/templates", "Templates"],
   ["/recipients", "Audience"],
   ["/events", "Events"],
   ["/jobs", "Jobs"],
