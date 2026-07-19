@@ -1,11 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
 import { emailTemplates } from "@/db/schema";
 import { EmailTemplateEditor } from "@/components/email-template-editor";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
 import { requireAdmin } from "@/server/auth/session";
-import { saveEmailTemplateAction } from "./actions";
+import { deleteEmailTemplateAction, saveEmailTemplateAction } from "./actions";
 
 export default async function TemplatesPage({
   searchParams,
@@ -15,7 +15,10 @@ export default async function TemplatesPage({
   const admin = await requireAdmin();
   const query = searchParams ? await searchParams : {};
   const rows = await db.query.emailTemplates.findMany({
-    where: eq(emailTemplates.workspaceId, admin.workspaceId),
+    where: and(
+      eq(emailTemplates.workspaceId, admin.workspaceId),
+      isNull(emailTemplates.deletedAt),
+    ),
     orderBy: (table, { desc }) => [desc(table.updatedAt)],
   });
   const selectedTemplate =
@@ -67,12 +70,24 @@ export default async function TemplatesPage({
                     <td>{template.recipientRole}</td>
                     <td>{template.updatedAt.toLocaleString()}</td>
                     <td className="text-right">
-                      <Link
-                        href={`/templates?template=${template.id}`}
-                        className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex justify-end gap-2">
+                        <Link
+                          href={`/templates?template=${template.id}`}
+                          className="rounded border border-line px-2.5 py-1.5 text-xs font-medium hover:bg-panel"
+                        >
+                          Edit
+                        </Link>
+                        <form action={deleteEmailTemplateAction}>
+                          <input
+                            type="hidden"
+                            name="templateId"
+                            value={template.id}
+                          />
+                          <button className="rounded border border-red-200 px-2.5 py-1.5 text-xs font-medium text-danger hover:bg-red-50">
+                            Delete
+                          </button>
+                        </form>
+                      </div>
                     </td>
                   </tr>
                 ))}

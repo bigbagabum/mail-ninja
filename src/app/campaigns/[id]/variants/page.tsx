@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
 import { campaignVariants, emailTemplates } from "@/db/schema";
@@ -24,7 +24,10 @@ export default async function VariantsPage({
     orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
   });
   const reusableTemplates = await db.query.emailTemplates.findMany({
-    where: eq(emailTemplates.workspaceId, admin.workspaceId),
+    where: and(
+      eq(emailTemplates.workspaceId, admin.workspaceId),
+      isNull(emailTemplates.deletedAt),
+    ),
     orderBy: (table, { asc }) => [asc(table.name)],
   });
   const selectedTemplate =

@@ -27,7 +27,11 @@ export async function attachEmailTemplateToCampaignAction(formData: FormData) {
   const template = await db.query.emailTemplates.findFirst({
     where: eq(emailTemplates.id, data.templateId),
   });
-  if (!template || template.workspaceId !== admin.workspaceId) {
+  if (
+    !template ||
+    template.workspaceId !== admin.workspaceId ||
+    template.deletedAt
+  ) {
     throw new Error("Template not found.");
   }
 

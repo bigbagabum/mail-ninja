@@ -278,6 +278,7 @@ export const emailTemplates = pgTable(
     createdBy: uuid("created_by").references(() => adminUsers.id, {
       onDelete: "set null",
     }),
+    deletedAt: timestamp("deleted_at", { withTimezone: true }),
     ...timestamps,
   },
   (table) => ({

@@ -538,3 +538,10 @@ ALTER TABLE "email_templates" ADD CONSTRAINT "email_templates_workspace_id_works
 ALTER TABLE "email_templates" ADD CONSTRAINT "email_templates_created_by_admin_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."admin_users"("id") ON DELETE set null ON UPDATE no action;
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "email_templates_workspace_idx" ON "email_templates" USING btree ("workspace_id");
+
+-- ============================================================
+-- Migration: 0007_soft_delete_email_templates.sql
+-- ============================================================
+ALTER TABLE "email_templates" ADD COLUMN IF NOT EXISTS "deleted_at" timestamp with time zone;
+--> statement-breakpoint
+CREATE INDEX IF NOT EXISTS "email_templates_active_workspace_idx" ON "email_templates" USING btree ("workspace_id","updated_at") WHERE "deleted_at" IS NULL;

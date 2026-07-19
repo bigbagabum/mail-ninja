@@ -67,6 +67,7 @@ export async function saveEmailTemplateAction(formData: FormData) {
         previewText: data.previewText || null,
         htmlContent: data.htmlContent,
         textContent: data.textContent,
+        deletedAt: null,
         updatedAt: new Date(),
       })
       .where(eq(emailTemplates.id, data.templateId));
@@ -87,6 +88,7 @@ export async function saveEmailTemplateAction(formData: FormData) {
       previewText: data.previewText || null,
       htmlContent: data.htmlContent,
       textContent: data.textContent,
+      deletedAt: null,
     })
     .onConflictDoUpdate({
       target: [emailTemplates.workspaceId, emailTemplates.slug],
@@ -99,10 +101,31 @@ export async function saveEmailTemplateAction(formData: FormData) {
         previewText: data.previewText || null,
         htmlContent: data.htmlContent,
         textContent: data.textContent,
+        deletedAt: null,
         updatedAt: new Date(),
       },
     })
     .returning({ id: emailTemplates.id });
 
   redirect(`/templates?template=${template.id}`);
+}
+
+const deleteTemplateSchema = z.object({
+  templateId: z.string().uuid(),
+});
+
+export async function deleteEmailTemplateAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const data = deleteTemplateSchema.parse(Object.fromEntries(formData));
+  const template = await db.query.emailTemplates.findFirst({
+    where: eq(emailTemplates.id, data.templateId),
+  });
+  if (!template || template.workspaceId !== admin.workspaceId) {
+    throw new Error("Template not found.");
+  }
+  await db
+    .update(emailTemplates)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(emailTemplates.id, data.templateId));
+  redirect("/templates");
 }
