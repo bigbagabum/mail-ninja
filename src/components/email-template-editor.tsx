@@ -52,7 +52,13 @@ function wrapEmailHtml(body: string) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;background:#f6f8fb;font-family:Arial,sans-serif;color:#17202a;"><div style="margin:0 auto;max-width:640px;background:#ffffff;padding:32px;line-height:1.55;">${body}</div></body></html>`;
 }
 
-export function EmailTemplateEditor() {
+export function EmailTemplateEditor({
+  initialHtml = "",
+  initialText = "",
+}: {
+  initialHtml?: string | null;
+  initialText?: string | null;
+}) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const htmlFieldRef = useRef<HTMLInputElement | null>(null);
   const textFieldRef = useRef<HTMLInputElement | null>(null);
@@ -63,8 +69,8 @@ export function EmailTemplateEditor() {
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "text">(
     "desktop",
   );
-  const [html, setHtml] = useState("");
-  const [text, setText] = useState("");
+  const [html, setHtml] = useState(initialHtml ?? "");
+  const [text, setText] = useState(initialText ?? "");
 
   const previewHtml = useMemo(
     () =>
@@ -115,6 +121,15 @@ export function EmailTemplateEditor() {
   useEffect(() => {
     syncHiddenFields();
   }, [html, text]);
+
+  useEffect(() => {
+    setHtml(initialHtml ?? "");
+    setText(initialText ?? "");
+    if (editorRef.current) {
+      editorRef.current.innerHTML = initialHtml ?? "";
+    }
+    syncHiddenFields(initialHtml ?? "", initialText ?? "");
+  }, [initialHtml, initialText]);
 
   useEffect(() => {
     if (

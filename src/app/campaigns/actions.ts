@@ -131,6 +131,7 @@ export async function updateCampaignAction(formData: FormData) {
 const variantSchema = z
   .object({
     campaignId: z.string().uuid(),
+    variantId: z.string().uuid().optional(),
     locale: z.string().min(2),
     recipientRole: z.string().default("generic"),
     name: z.string().min(1),
@@ -148,6 +149,31 @@ const variantSchema = z
 export async function createVariantAction(formData: FormData) {
   await requireAdmin();
   const data = variantSchema.parse(Object.fromEntries(formData));
+  if (data.variantId) {
+    const existingVariant = await db.query.campaignVariants.findFirst({
+      where: eq(campaignVariants.id, data.variantId),
+    });
+    if (!existingVariant || existingVariant.campaignId !== data.campaignId) {
+      throw new Error("Template not found.");
+    }
+    await db
+      .update(campaignVariants)
+      .set({
+        locale: data.locale,
+        recipientRole: data.recipientRole,
+        name: data.name,
+        subject: data.subject,
+        previewText: data.previewText,
+        htmlContent: data.htmlContent,
+        textContent: data.textContent,
+        isFallback: Boolean(data.isFallback),
+        updatedAt: new Date(),
+      })
+      .where(eq(campaignVariants.id, data.variantId));
+    redirect(
+      `/campaigns/${data.campaignId}/variants?template=${data.variantId}`,
+    );
+  }
   await db
     .insert(campaignVariants)
     .values({ ...data, isFallback: Boolean(data.isFallback) })
