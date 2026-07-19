@@ -12,6 +12,7 @@ import { retryBackoffMs } from "@/server/jobs/backoff";
 import { mapResendEventType } from "@/server/webhooks/mapping";
 import { scoreRecipientPriority } from "@/server/imports/priority";
 import { parseTagList } from "@/lib/tags";
+import { htmlToPlainText } from "@/lib/templates";
 
 describe("domain utilities", () => {
   it("normalizes email without unsafe mailbox transformations", () => {
@@ -124,6 +125,14 @@ describe("domain utilities", () => {
     expect(mapResendEventType("email.clicked")).toBe("clicked");
     expect(mapResendEventType("other")).toBe("unknown");
     expect(retryBackoffMs(2)).toBeGreaterThan(retryBackoffMs(1));
+  });
+
+  it("generates plain text from email HTML", () => {
+    expect(
+      htmlToPlainText(
+        "<h2>Hello&nbsp;{{first_name}}</h2><p>Visit &amp; read</p>",
+      ),
+    ).toBe("Hello {{first_name}}\nVisit & read");
   });
 
   it("scores recipient priority cohorts", () => {

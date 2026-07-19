@@ -16,7 +16,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
 import { prepareCampaign } from "@/server/campaigns/prepare";
 import { buildCampaignRecipientFilters } from "@/server/campaigns/recipient-filters";
-import { hasUnsubscribeLink } from "@/lib/templates";
+import { hasUnsubscribeLink, htmlToPlainText } from "@/lib/templates";
 
 function slugifyCampaignKey(value: string) {
   return value
@@ -128,17 +128,22 @@ export async function updateCampaignAction(formData: FormData) {
   redirect(`/campaigns/${campaignId}/edit`);
 }
 
-const variantSchema = z.object({
-  campaignId: z.string().uuid(),
-  locale: z.string().min(2),
-  recipientRole: z.string().default("generic"),
-  name: z.string().min(1),
-  subject: z.string().min(1),
-  previewText: z.string().optional(),
-  htmlContent: z.string().min(1),
-  textContent: z.string().optional(),
-  isFallback: z.coerce.boolean().optional(),
-});
+const variantSchema = z
+  .object({
+    campaignId: z.string().uuid(),
+    locale: z.string().min(2),
+    recipientRole: z.string().default("generic"),
+    name: z.string().min(1),
+    subject: z.string().min(1),
+    previewText: z.string().optional(),
+    htmlContent: z.string().min(1),
+    textContent: z.string().optional(),
+    isFallback: z.coerce.boolean().optional(),
+  })
+  .transform((data) => ({
+    ...data,
+    textContent: data.textContent?.trim() || htmlToPlainText(data.htmlContent),
+  }));
 
 export async function createVariantAction(formData: FormData) {
   await requireAdmin();

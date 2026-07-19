@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { campaignVariants } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
+import { EmailTemplateEditor } from "@/components/email-template-editor";
 import { PageHeader, Badge } from "@/components/ui";
 import { createVariantAction } from "../../actions";
 
@@ -94,23 +95,7 @@ export default async function VariantsPage({
               className="mt-1 w-full rounded border-line"
             />
           </label>
-          <label className="text-sm font-medium">
-            HTML body
-            <textarea
-              name="htmlContent"
-              required
-              rows={7}
-              className="mt-1 w-full rounded border-line"
-            />
-          </label>
-          <label className="text-sm font-medium">
-            Plain text body
-            <textarea
-              name="textContent"
-              rows={5}
-              className="mt-1 w-full rounded border-line"
-            />
-          </label>
+          <EmailTemplateEditor />
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

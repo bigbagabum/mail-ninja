@@ -34,6 +34,44 @@ td > button {
   vertical-align: middle;
 }
 
+.email-editor[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  color: #64748b;
+  pointer-events: none;
+}
+
+.email-editor:focus[data-empty="true"]::before {
+  color: #94a3b8;
+}
+
+.email-editor a {
+  color: #0f766e;
+  text-decoration: underline;
+}
+
+.email-editor h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.email-editor p {
+  margin: 0 0 0.75rem;
+}
+
+.email-editor ul,
+.email-editor ol {
+  margin: 0 0 0.75rem 1.25rem;
+}
+
+.email-editor ul {
+  list-style: disc;
+}
+
+.email-editor ol {
+  list-style: decimal;
+}
+
 .adaptive-glass {
   position: relative;
   color: var(--adaptive-glass-fg, rgba(15, 23, 42, 0.94));
