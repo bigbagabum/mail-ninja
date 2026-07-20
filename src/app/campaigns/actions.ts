@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   auditLogs,
@@ -10,13 +10,19 @@ import {
   campaignRecipients,
   campaignVariants,
   campaignWaves,
+  jobs,
   recipients,
 } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { enqueueJob } from "@/server/jobs/queue";
 import { prepareCampaign } from "@/server/campaigns/prepare";
 import { buildCampaignRecipientFilters } from "@/server/campaigns/recipient-filters";
-import { hasUnsubscribeLink, htmlToPlainText } from "@/lib/templates";
+import { createProviderForWorkspace } from "@/server/provider/resend";
+import {
+  hasUnsubscribeLink,
+  renderTemplate,
+} from "@/lib/templates";
+import { normalizeEmail } from "@/lib/normalization";
 
 function slugifyCampaignKey(value: string) {
   return value
@@ -126,73 +132,6 @@ export async function updateCampaignAction(formData: FormData) {
     });
   });
   redirect(`/campaigns/${campaignId}/edit`);
-}
-
-const variantSchema = z
-  .object({
-    campaignId: z.string().uuid(),
-    variantId: z.string().uuid().optional(),
-    locale: z.string().min(2),
-    recipientRole: z.string().default("generic"),
-    name: z.string().min(1),
-    subject: z.string().min(1),
-    previewText: z.string().optional(),
-    htmlContent: z.string().min(1),
-    textContent: z.string().optional(),
-  })
-  .transform((data) => ({
-    ...data,
-    textContent: data.textContent?.trim() || htmlToPlainText(data.htmlContent),
-  }));
-
-export async function createVariantAction(formData: FormData) {
-  await requireAdmin();
-  const data = variantSchema.parse(Object.fromEntries(formData));
-  if (data.variantId) {
-    const existingVariant = await db.query.campaignVariants.findFirst({
-      where: eq(campaignVariants.id, data.variantId),
-    });
-    if (!existingVariant || existingVariant.campaignId !== data.campaignId) {
-      throw new Error("Template not found.");
-    }
-    await db
-      .update(campaignVariants)
-      .set({
-        locale: data.locale,
-        recipientRole: data.recipientRole,
-        name: data.name,
-        subject: data.subject,
-        previewText: data.previewText,
-        htmlContent: data.htmlContent,
-        textContent: data.textContent,
-        isFallback: false,
-        updatedAt: new Date(),
-      })
-      .where(eq(campaignVariants.id, data.variantId));
-    redirect(
-      `/campaigns/${data.campaignId}/variants?template=${data.variantId}`,
-    );
-  }
-  await db
-    .insert(campaignVariants)
-    .values({ ...data, isFallback: false })
-    .onConflictDoUpdate({
-      target: [
-        campaignVariants.campaignId,
-        campaignVariants.locale,
-        campaignVariants.recipientRole,
-      ],
-      set: {
-        name: data.name,
-        subject: data.subject,
-        previewText: data.previewText,
-        htmlContent: data.htmlContent,
-        textContent: data.textContent,
-        isFallback: false,
-        updatedAt: new Date(),
-      },
-    });
-  redirect(`/campaigns/${data.campaignId}/variants`);
 }
 
 const waveSchema = z.object({
@@ -330,4 +269,161 @@ export async function sendWaveAction(formData: FormData) {
     priority: 10,
   });
   redirect(`/jobs`);
+}
+
+const launchCampaignSchema = z.object({
+  campaignId: z.string().uuid(),
+  sendMode: z.enum(["now", "scheduled"]),
+  scheduledAt: z.string().optional(),
+});
+
+function parseUtcSchedule(value: string | undefined) {
+  if (!value) throw new Error("Choose a UTC date and time.");
+  const scheduledAt = new Date(`${value}:00.000Z`);
+  if (Number.isNaN(scheduledAt.getTime())) {
+    throw new Error("Scheduled date is invalid.");
+  }
+  return scheduledAt;
+}
+
+export async function launchCampaignAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const data = launchCampaignSchema.parse(Object.fromEntries(formData));
+  const campaign = await db.query.campaigns.findFirst({
+    where: eq(campaigns.id, data.campaignId),
+  });
+  if (!campaign || campaign.workspaceId !== admin.workspaceId) {
+    throw new Error("Campaign not found.");
+  }
+  if (campaign.status !== "ready") {
+    throw new Error("Prepare the campaign before sending.");
+  }
+  const waves = await db.query.campaignWaves.findMany({
+    where: eq(campaignWaves.campaignId, data.campaignId),
+    orderBy: (table, { asc }) => [asc(table.position)],
+  });
+  if (waves.length === 0) throw new Error("Add at least one campaign wave.");
+
+  const runAfter =
+    data.sendMode === "scheduled"
+      ? parseUtcSchedule(data.scheduledAt)
+      : new Date();
+  const now = new Date();
+  if (data.sendMode === "scheduled" && runAfter <= now) {
+    throw new Error("Scheduled time must be in the future.");
+  }
+
+  await db.transaction(async (tx) => {
+    const [launched] = await tx
+      .update(campaigns)
+      .set({
+        status: "sending",
+        scheduledAt: runAfter,
+        startedAt: data.sendMode === "now" ? now : null,
+        updatedAt: now,
+      })
+      .where(
+        and(eq(campaigns.id, data.campaignId), eq(campaigns.status, "ready")),
+      )
+      .returning({ id: campaigns.id });
+    if (!launched) throw new Error("Campaign has already been launched.");
+    for (const wave of waves) {
+      const scheduledAt = new Date(
+        runAfter.getTime() + (wave.position - 1) * 60_000,
+      );
+      await tx
+        .update(campaignWaves)
+        .set({
+          status: data.sendMode === "now" ? "sending" : "ready",
+          scheduledAt,
+          startedAt: data.sendMode === "now" ? now : null,
+          updatedAt: now,
+        })
+        .where(eq(campaignWaves.id, wave.id));
+      await tx.insert(auditLogs).values({
+        workspaceId: admin.workspaceId,
+        adminUserId: admin.id,
+        action: "campaign_send_queued",
+        entityType: "campaign_wave",
+        entityId: wave.id,
+        metadata: {
+          campaignId: data.campaignId,
+          scheduledAt: scheduledAt.toISOString(),
+        },
+      });
+      await tx.insert(jobs).values({
+        workspaceId: admin.workspaceId,
+        type: "send_provider_broadcast",
+        payload: { campaignId: data.campaignId, waveId: wave.id },
+        priority: 10 + wave.position,
+        runAfter: scheduledAt,
+      });
+    }
+    await tx.insert(auditLogs).values({
+      workspaceId: admin.workspaceId,
+      adminUserId: admin.id,
+      action: "campaign_launch",
+      entityType: "campaign",
+      entityId: data.campaignId,
+      metadata: {
+        mode: data.sendMode,
+        scheduledAt: runAfter.toISOString(),
+        waveCount: waves.length,
+      },
+    });
+  });
+  redirect(`/jobs`);
+}
+
+const testEmailSchema = z.object({
+  campaignId: z.string().uuid(),
+  testEmail: z.string().email(),
+});
+
+export async function sendCampaignTestEmailAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const data = testEmailSchema.parse(Object.fromEntries(formData));
+  const campaign = await db.query.campaigns.findFirst({
+    where: eq(campaigns.id, data.campaignId),
+  });
+  if (!campaign || campaign.workspaceId !== admin.workspaceId) {
+    throw new Error("Campaign not found.");
+  }
+  const variant = await db.query.campaignVariants.findFirst({
+    where: eq(campaignVariants.campaignId, data.campaignId),
+    orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
+  });
+  if (!variant)
+    throw new Error("Create an email template before sending a test.");
+
+  const testRecipient = {
+    first_name: "Test",
+    last_name: "Recipient",
+    email: normalizeEmail(data.testEmail),
+    locale: campaign.defaultLocale,
+    role: "tester",
+    platform: "test",
+    external_id: "test-recipient",
+    campaign_name: campaign.name,
+    unsubscribe_url: "https://example.com/unsubscribe/test",
+  };
+  const { provider } = await createProviderForWorkspace(admin.workspaceId);
+  await provider.sendTestEmail({
+    from: `${campaign.fromName} <${campaign.fromEmail}>`,
+    to: [normalizeEmail(data.testEmail)],
+    subject: renderTemplate(variant.subject, testRecipient),
+    html: renderTemplate(variant.htmlContent, testRecipient),
+    text: variant.textContent
+      ? renderTemplate(variant.textContent, testRecipient)
+      : null,
+  });
+  await db.insert(auditLogs).values({
+    workspaceId: admin.workspaceId,
+    adminUserId: admin.id,
+    action: "campaign_test_email",
+    entityType: "campaign",
+    entityId: data.campaignId,
+    metadata: { to: normalizeEmail(data.testEmail), variantId: variant.id },
+  });
+  redirect(`/campaigns/${data.campaignId}/send`);
 }

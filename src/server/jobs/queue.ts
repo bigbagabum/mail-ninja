@@ -9,6 +9,7 @@ export async function enqueueJob(input: {
   payload: Record<string, unknown>;
   priority?: number;
   maxAttempts?: number;
+  runAfter?: Date;
 }) {
   const [job] = await db
     .insert(jobs)
@@ -17,7 +18,8 @@ export async function enqueueJob(input: {
       type: input.type,
       payload: input.payload,
       priority: input.priority ?? 100,
-      maxAttempts: input.maxAttempts ?? 5
+      maxAttempts: input.maxAttempts ?? 5,
+      runAfter: input.runAfter ?? new Date(),
     })
     .returning();
   return job;
@@ -46,15 +48,36 @@ export async function claimJobs(limit = env.WORKER_CONCURRENCY) {
 }
 
 export async function recoverStaleJobs() {
-  const timeout = new Date(Date.now() - env.JOB_LOCK_TIMEOUT_MINUTES * 60 * 1000);
+  const timeout = new Date(
+    Date.now() - env.JOB_LOCK_TIMEOUT_MINUTES * 60 * 1000,
+  );
   await db
     .update(jobs)
-    .set({ status: "retrying", lockedAt: null, lockedBy: null, runAfter: new Date(), updatedAt: new Date() })
+    .set({
+      status: "retrying",
+      lockedAt: null,
+      lockedBy: null,
+      runAfter: new Date(),
+      updatedAt: new Date(),
+    })
     .where(and(eq(jobs.status, "running"), lte(jobs.lockedAt, timeout)));
 }
 
-export async function completeJob(id: string, result: Record<string, unknown> = {}) {
-  await db.update(jobs).set({ status: "completed", result, completedAt: new Date(), lockedAt: null, lockedBy: null, updatedAt: new Date() }).where(eq(jobs.id, id));
+export async function completeJob(
+  id: string,
+  result: Record<string, unknown> = {},
+) {
+  await db
+    .update(jobs)
+    .set({
+      status: "completed",
+      result,
+      completedAt: new Date(),
+      lockedAt: null,
+      lockedBy: null,
+      updatedAt: new Date(),
+    })
+    .where(eq(jobs.id, id));
 }
 
 export async function failJob(id: string, error: unknown, runAfter: Date) {
@@ -63,6 +86,13 @@ export async function failJob(id: string, error: unknown, runAfter: Date) {
   const terminal = job ? job.attempts >= job.maxAttempts : false;
   await db
     .update(jobs)
-    .set({ status: terminal ? "failed" : "retrying", lastError: message, runAfter, lockedAt: null, lockedBy: null, updatedAt: new Date() })
+    .set({
+      status: terminal ? "failed" : "retrying",
+      lastError: message,
+      runAfter,
+      lockedAt: null,
+      lockedBy: null,
+      updatedAt: new Date(),
+    })
     .where(or(eq(jobs.id, id)));
 }
