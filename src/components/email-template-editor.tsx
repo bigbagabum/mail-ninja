@@ -15,6 +15,7 @@ import {
   Type,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { renderTemplate } from "@/lib/templates";
 
 const variables = [
   "first_name",
@@ -27,6 +28,18 @@ const variables = [
   "campaign_name",
   "unsubscribe_url",
 ] as const;
+
+const previewVariables = {
+  first_name: "Alex",
+  last_name: "Morgan",
+  email: "alex@example.com",
+  locale: "en",
+  role: "customer",
+  platform: "web",
+  external_id: "user_12345",
+  campaign_name: "Spring Update",
+  unsubscribe_url: "https://example.com/unsubscribe/sample-token",
+};
 
 function plainTextFromHtml(html: string) {
   return html
@@ -72,14 +85,24 @@ export function EmailTemplateEditor({
   const [html, setHtml] = useState(initialHtml ?? "");
   const [text, setText] = useState(initialText ?? "");
 
-  const previewHtml = useMemo(
+  const renderedHtml = useMemo(
     () =>
-      wrapEmailHtml(
+      renderTemplate(
         html ||
           '<p style="color:#64748b;">Your email preview will appear here.</p>',
+        previewVariables,
       ),
     [html],
   );
+  const renderedText = useMemo(
+    () =>
+      renderTemplate(
+        text.trim() || plainTextFromHtml(html) || "Plain text preview will appear here.",
+        previewVariables,
+      ),
+    [html, text],
+  );
+  const previewHtml = useMemo(() => wrapEmailHtml(renderedHtml), [renderedHtml]);
 
   function syncFromEditor() {
     const nextHtml = editorRef.current?.innerHTML ?? "";
@@ -285,8 +308,13 @@ export function EmailTemplateEditor({
       </div>
 
       <div className="rounded border border-line bg-panel p-3">
-        <div className="mb-2 text-xs font-semibold uppercase text-muted">
-          Variables
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="text-xs font-semibold uppercase text-muted">
+            Variables
+          </div>
+          <div className="text-xs text-muted">
+            Preview renders with sample data.
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           {variables.map((variable) => (
@@ -350,9 +378,7 @@ export function EmailTemplateEditor({
             </div>
             {previewMode === "text" ? (
               <pre className="min-h-[300px] whitespace-pre-wrap bg-white p-4 text-sm leading-6 text-ink">
-                {text.trim() ||
-                  plainTextFromHtml(html) ||
-                  "Plain text preview will appear here."}
+                {renderedText}
               </pre>
             ) : (
               <div
