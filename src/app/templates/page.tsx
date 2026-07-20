@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { emailTemplates } from "@/db/schema";
 import { EmailTemplateEditor } from "@/components/email-template-editor";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
+import { isMissingEmailTemplatesSchemaError } from "@/lib/db-errors";
 import { requireAdmin } from "@/server/auth/session";
 import { deleteEmailTemplateAction, saveEmailTemplateAction } from "./actions";
 
@@ -14,13 +15,42 @@ export default async function TemplatesPage({
 }) {
   const admin = await requireAdmin();
   const query = searchParams ? await searchParams : {};
-  const rows = await db.query.emailTemplates.findMany({
-    where: and(
-      eq(emailTemplates.workspaceId, admin.workspaceId),
-      isNull(emailTemplates.deletedAt),
-    ),
-    orderBy: (table, { desc }) => [desc(table.updatedAt)],
-  });
+  const rows = await db.query.emailTemplates
+    .findMany({
+      where: and(
+        eq(emailTemplates.workspaceId, admin.workspaceId),
+        isNull(emailTemplates.deletedAt),
+      ),
+      orderBy: (table, { desc }) => [desc(table.updatedAt)],
+    })
+    .catch((error: unknown) => {
+      if (isMissingEmailTemplatesSchemaError(error)) return null;
+      throw error;
+    });
+
+  if (!rows) {
+    return (
+      <>
+        <PageHeader title="Templates" />
+        <div className="rounded border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+          <h2 className="font-semibold">Template migrations are required</h2>
+          <p className="mt-2">
+            The database does not have the reusable templates schema yet. Apply
+            these migrations, then reload this page:
+          </p>
+          <ul className="mt-3 list-disc space-y-1 pl-5 font-mono text-xs">
+            <li>drizzle/0006_email_templates.sql</li>
+            <li>drizzle/0007_soft_delete_email_templates.sql</li>
+          </ul>
+          <p className="mt-3">
+            For manual Supabase setup, the same SQL is included in
+            docs/database-structure.sql.
+          </p>
+        </div>
+      </>
+    );
+  }
+
   const selectedTemplate =
     rows.find((template) => template.id === query.template) ?? null;
 

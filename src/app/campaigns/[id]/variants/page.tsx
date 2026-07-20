@@ -6,6 +6,7 @@ import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { EmailTemplateEditor } from "@/components/email-template-editor";
 import { PageHeader } from "@/components/ui";
+import { isMissingEmailTemplatesSchemaError } from "@/lib/db-errors";
 import { createVariantAction } from "../../actions";
 import {
   attachEmailTemplateToCampaignAction,
@@ -26,13 +27,19 @@ export default async function VariantsPage({
     where: eq(campaignVariants.campaignId, id),
     orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
   });
-  const reusableTemplates = await db.query.emailTemplates.findMany({
-    where: and(
-      eq(emailTemplates.workspaceId, admin.workspaceId),
-      isNull(emailTemplates.deletedAt),
-    ),
-    orderBy: (table, { asc }) => [asc(table.name)],
-  });
+  const reusableTemplates = await db.query.emailTemplates
+    .findMany({
+      where: and(
+        eq(emailTemplates.workspaceId, admin.workspaceId),
+        isNull(emailTemplates.deletedAt),
+      ),
+      orderBy: (table, { asc }) => [asc(table.name)],
+    })
+    .catch((error: unknown) => {
+      if (isMissingEmailTemplatesSchemaError(error)) return null;
+      throw error;
+    });
+  const templateLibraryUnavailable = reusableTemplates === null;
   const selectedTemplate =
     rows.find((variant) => variant.id === query.template) ?? null;
   return (
@@ -47,6 +54,20 @@ export default async function VariantsPage({
               Choose a library template and copy it into this campaign. The
               copied campaign template can then be edited safely for this send.
             </p>
+            {templateLibraryUnavailable ? (
+              <div className="mt-3 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-950">
+                Reusable templates need database migrations before they can be
+                used. Apply{" "}
+                <span className="font-mono text-xs">
+                  drizzle/0006_email_templates.sql
+                </span>{" "}
+                and{" "}
+                <span className="font-mono text-xs">
+                  drizzle/0007_soft_delete_email_templates.sql
+                </span>
+                .
+              </div>
+            ) : null}
             <form
               action={attachEmailTemplateToCampaignAction}
               className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto]"
@@ -57,11 +78,14 @@ export default async function VariantsPage({
                 required
                 className="rounded border-line text-sm"
                 defaultValue=""
+                disabled={templateLibraryUnavailable}
               >
                 <option value="" disabled>
-                  Select reusable template
+                  {templateLibraryUnavailable
+                    ? "Template library unavailable"
+                    : "Select reusable template"}
                 </option>
-                {reusableTemplates.map((template) => (
+                {(reusableTemplates ?? []).map((template) => (
                   <option key={template.id} value={template.id}>
                     {template.name} · {template.locale} ·{" "}
                     {template.recipientRole}
@@ -69,13 +93,16 @@ export default async function VariantsPage({
                 ))}
               </select>
               <button
-                disabled={reusableTemplates.length === 0}
+                disabled={
+                  templateLibraryUnavailable ||
+                  (reusableTemplates?.length ?? 0) === 0
+                }
                 className="rounded bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
               >
                 Add to campaign
               </button>
             </form>
-            {reusableTemplates.length === 0 ? (
+            {!templateLibraryUnavailable && reusableTemplates.length === 0 ? (
               <Link
                 href="/templates"
                 className="mt-3 inline-flex text-sm font-medium text-accent hover:underline"
