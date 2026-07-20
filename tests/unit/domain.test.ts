@@ -12,7 +12,7 @@ import { retryBackoffMs } from "@/server/jobs/backoff";
 import { mapResendEventType } from "@/server/webhooks/mapping";
 import { scoreRecipientPriority } from "@/server/imports/priority";
 import { parseTagList } from "@/lib/tags";
-import { htmlToPlainText } from "@/lib/templates";
+import { htmlToPlainText, normalizeTemplateHtml } from "@/lib/templates";
 
 describe("domain utilities", () => {
   it("normalizes email without unsafe mailbox transformations", () => {
@@ -130,6 +130,14 @@ describe("domain utilities", () => {
         "<h2>Hello&nbsp;{{first_name}}</h2><p>Visit &amp; read</p>",
       ),
     ).toBe("Hello {{first_name}}\nVisit & read");
+  });
+
+  it("normalizes escaped HTML source before previewing or saving", () => {
+    const escaped = "&lt;h1&gt;Hello {{first_name}}&lt;/h1&gt;";
+    expect(normalizeTemplateHtml(escaped)).toBe(
+      "<h1>Hello {{first_name}}</h1>",
+    );
+    expect(htmlToPlainText(escaped)).toBe("Hello {{first_name}}");
   });
 
   it("scores recipient priority cohorts", () => {

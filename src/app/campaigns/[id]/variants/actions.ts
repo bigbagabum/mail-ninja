@@ -10,6 +10,7 @@ import {
   campaignVariants,
   emailTemplates,
 } from "@/db/schema";
+import { htmlToPlainText, normalizeTemplateHtml } from "@/lib/templates";
 import { requireAdmin } from "@/server/auth/session";
 
 const attachTemplateSchema = z.object({
@@ -43,6 +44,8 @@ export async function attachEmailTemplateToCampaignAction(formData: FormData) {
   ) {
     throw new Error("Template not found.");
   }
+  const htmlContent = normalizeTemplateHtml(template.htmlContent);
+  const textContent = template.textContent || htmlToPlainText(htmlContent);
 
   const [variant] = await db
     .insert(campaignVariants)
@@ -53,8 +56,8 @@ export async function attachEmailTemplateToCampaignAction(formData: FormData) {
       name: template.name,
       subject: template.subject,
       previewText: template.previewText,
-      htmlContent: template.htmlContent,
-      textContent: template.textContent,
+      htmlContent,
+      textContent,
       isFallback: false,
     })
     .onConflictDoUpdate({
@@ -67,8 +70,8 @@ export async function attachEmailTemplateToCampaignAction(formData: FormData) {
         name: template.name,
         subject: template.subject,
         previewText: template.previewText,
-        htmlContent: template.htmlContent,
-        textContent: template.textContent,
+        htmlContent,
+        textContent,
         isFallback: false,
         updatedAt: new Date(),
       },

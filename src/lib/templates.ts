@@ -33,9 +33,27 @@ function decodeBasicEntities(value: string) {
     .replaceAll("&#039;", "'");
 }
 
+export function normalizeTemplateHtml(value: string) {
+  const trimmed = value.trim();
+  const decoded = decodeBasicEntities(trimmed);
+  const hasEscapedHtmlTag = /&lt;(?:!doctype|\/?[a-z][\w:-]*)(?:\s|&gt;|>)/i.test(
+    trimmed,
+  );
+  const hasRealHtmlTag = /<(?:!doctype|\/?[a-z][\w:-]*)(?:\s|>|\/>)/i.test(
+    trimmed,
+  );
+
+  if (hasEscapedHtmlTag && !hasRealHtmlTag) {
+    return decoded;
+  }
+
+  return value;
+}
+
 export function htmlToPlainText(html: string) {
+  const normalizedHtml = normalizeTemplateHtml(html);
   return decodeBasicEntities(
-    html
+    normalizedHtml
       .replace(lineBreakTags, "\n")
       .replace(blockBreakTags, "\n")
       .replace(htmlTags, "")

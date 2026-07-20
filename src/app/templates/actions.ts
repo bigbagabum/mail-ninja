@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { emailTemplates } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
-import { htmlToPlainText } from "@/lib/templates";
+import { htmlToPlainText, normalizeTemplateHtml } from "@/lib/templates";
 
 function slugifyTemplateSlug(value: string) {
   return value
@@ -36,11 +36,12 @@ const templateSchema = z
     const slug = slugifyTemplateSlug(data.slug || data.name);
     if (!slug)
       throw new Error("Template slug must contain letters or numbers.");
+    const htmlContent = normalizeTemplateHtml(data.htmlContent);
     return {
       ...data,
       slug,
-      textContent:
-        data.textContent?.trim() || htmlToPlainText(data.htmlContent),
+      htmlContent,
+      textContent: data.textContent?.trim() || htmlToPlainText(htmlContent),
     };
   });
 

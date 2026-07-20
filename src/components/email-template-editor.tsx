@@ -15,7 +15,7 @@ import {
   Type,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { renderTemplate } from "@/lib/templates";
+import { normalizeTemplateHtml, renderTemplate } from "@/lib/templates";
 
 const variables = [
   "first_name",
@@ -82,13 +82,13 @@ export function EmailTemplateEditor({
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile" | "text">(
     "desktop",
   );
-  const [html, setHtml] = useState(initialHtml ?? "");
+  const [html, setHtml] = useState(normalizeTemplateHtml(initialHtml ?? ""));
   const [text, setText] = useState(initialText ?? "");
 
   const renderedHtml = useMemo(
     () =>
       renderTemplate(
-        html ||
+        normalizeTemplateHtml(html) ||
           '<p style="color:#64748b;">Your email preview will appear here.</p>',
         previewVariables,
       ),
@@ -113,8 +113,9 @@ export function EmailTemplateEditor({
   }
 
   function syncHiddenFields(nextHtml = html, nextText = text) {
-    const resolvedText = nextText.trim() || plainTextFromHtml(nextHtml);
-    if (htmlFieldRef.current) htmlFieldRef.current.value = nextHtml;
+    const normalizedHtml = normalizeTemplateHtml(nextHtml);
+    const resolvedText = nextText.trim() || plainTextFromHtml(normalizedHtml);
+    if (htmlFieldRef.current) htmlFieldRef.current.value = normalizedHtml;
     if (textFieldRef.current) textFieldRef.current.value = resolvedText;
   }
 
@@ -146,12 +147,13 @@ export function EmailTemplateEditor({
   }, [html, text]);
 
   useEffect(() => {
-    setHtml(initialHtml ?? "");
+    const normalizedInitialHtml = normalizeTemplateHtml(initialHtml ?? "");
+    setHtml(normalizedInitialHtml);
     setText(initialText ?? "");
     if (editorRef.current) {
-      editorRef.current.innerHTML = initialHtml ?? "";
+      editorRef.current.innerHTML = normalizedInitialHtml;
     }
-    syncHiddenFields(initialHtml ?? "", initialText ?? "");
+    syncHiddenFields(normalizedInitialHtml, initialText ?? "");
   }, [initialHtml, initialText]);
 
   useEffect(() => {
