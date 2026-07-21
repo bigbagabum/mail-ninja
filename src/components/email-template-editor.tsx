@@ -62,6 +62,10 @@ function isEmptyHtml(html: string) {
 }
 
 function wrapEmailHtml(body: string) {
+  if (/^\s*(?:<!doctype|<html)/i.test(body)) {
+    return body;
+  }
+
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;background:#f6f8fb;font-family:Arial,sans-serif;color:#17202a;"><div style="margin:0 auto;max-width:640px;background:#ffffff;padding:32px;line-height:1.55;">${body}</div></body></html>`;
 }
 

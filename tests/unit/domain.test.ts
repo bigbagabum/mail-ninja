@@ -140,6 +140,13 @@ describe("domain utilities", () => {
     expect(htmlToPlainText(escaped)).toBe("Hello {{first_name}}");
   });
 
+  it("normalizes escaped HTML even when the editor wrapped it in a real tag", () => {
+    const escaped = "<div>&lt;h1&gt;Hello {{first_name}}&lt;/h1&gt;</div>";
+    expect(normalizeTemplateHtml(escaped)).toBe(
+      "<div><h1>Hello {{first_name}}</h1></div>",
+    );
+  });
+
   it("scores recipient priority cohorts", () => {
     const high = scoreRecipientPriority({
       emailVerified: true,

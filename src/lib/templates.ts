@@ -35,19 +35,23 @@ function decodeBasicEntities(value: string) {
 
 export function normalizeTemplateHtml(value: string) {
   const trimmed = value.trim();
-  const decoded = decodeBasicEntities(trimmed);
-  const hasEscapedHtmlTag = /&lt;(?:!doctype|\/?[a-z][\w:-]*)(?:\s|&gt;|>)/i.test(
-    trimmed,
-  );
-  const hasRealHtmlTag = /<(?:!doctype|\/?[a-z][\w:-]*)(?:\s|>|\/>)/i.test(
+  const hasEscapedHtmlTag = /&lt;(?:!doctype|\/?[a-z][\w:-]*)(?:\s|&gt;)/i.test(
     trimmed,
   );
 
-  if (hasEscapedHtmlTag && !hasRealHtmlTag) {
-    return decoded;
+  if (!hasEscapedHtmlTag) {
+    return value;
   }
 
-  return value;
+  const decoded = decodeBasicEntities(trimmed);
+  const documentStart = decoded.search(/<!doctype|<html/i);
+  const documentEnd = decoded.toLowerCase().lastIndexOf("</html>");
+
+  if (documentStart >= 0 && documentEnd > documentStart) {
+    return decoded.slice(documentStart, documentEnd + "</html>".length);
+  }
+
+  return decoded;
 }
 
 export function htmlToPlainText(html: string) {
