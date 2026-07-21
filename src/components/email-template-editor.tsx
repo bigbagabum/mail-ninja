@@ -69,6 +69,12 @@ function wrapEmailHtml(body: string) {
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body style="margin:0;background:#f6f8fb;font-family:Arial,sans-serif;color:#17202a;"><div style="margin:0 auto;max-width:640px;background:#ffffff;padding:32px;line-height:1.55;">${body}</div></body></html>`;
 }
 
+function looksLikeHtmlSource(value: string) {
+  return /<(?:!doctype|html|body|table|div|p|h[1-6]|a|span|img|br)\b/i.test(
+    value.trim(),
+  );
+}
+
 export function EmailTemplateEditor({
   initialHtml = "",
   initialText = "",
@@ -142,6 +148,15 @@ export function EmailTemplateEditor({
   function handlePaste(event: React.ClipboardEvent<HTMLDivElement>) {
     event.preventDefault();
     const pastedText = event.clipboardData.getData("text/plain");
+    if (looksLikeHtmlSource(pastedText)) {
+      const normalizedHtml = normalizeTemplateHtml(pastedText);
+      setHtml(normalizedHtml);
+      setText((current) => current || plainTextFromHtml(normalizedHtml));
+      if (editorRef.current) editorRef.current.innerHTML = normalizedHtml;
+      syncHiddenFields(normalizedHtml, text || plainTextFromHtml(normalizedHtml));
+      return;
+    }
+
     document.execCommand("insertText", false, pastedText);
     syncFromEditor();
   }

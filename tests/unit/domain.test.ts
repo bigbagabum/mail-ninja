@@ -147,6 +147,22 @@ describe("domain utilities", () => {
     );
   });
 
+  it("repairs common contenteditable HTML source paste output", () => {
+    const pastedSource =
+      '<div></div><div><div style="max-width:640px"></div><div><p style="margin:0"></p></div><div>Hello!</div><div><h1 style="font-size:28px"></h1></div><div>Product update</div><div><a href="https://example.com"></a></div><div><a href="https://example.com">Open app</a></div></div>';
+
+    expect(normalizeTemplateHtml(pastedSource)).toContain(
+      '<p style="margin:0">Hello!</p>',
+    );
+    expect(normalizeTemplateHtml(pastedSource)).toContain(
+      '<h1 style="font-size:28px">Product update</h1>',
+    );
+    expect(normalizeTemplateHtml(pastedSource)).toContain(
+      '<a href="https://example.com">Open app</a>',
+    );
+    expect(normalizeTemplateHtml(pastedSource)).not.toContain("<div></div>");
+  });
+
   it("scores recipient priority cohorts", () => {
     const high = scoreRecipientPriority({
       emailVerified: true,
