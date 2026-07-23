@@ -187,7 +187,7 @@ export default async function ProviderAccountsPage() {
         <form
           action={createProviderAccountAction}
           autoComplete="off"
-          className="mt-5 grid gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4"
+          className="mt-5 grid gap-x-4 gap-y-4 md:grid-cols-2 xl:grid-cols-[120px_minmax(160px,1fr)_minmax(220px,1.4fr)_minmax(200px,1.2fr)_96px_112px_128px_120px]"
         >
           <label className={fieldClass}>
             <span className={labelClass}>Provider</span>
@@ -275,7 +275,7 @@ export default async function ProviderAccountsPage() {
               className={inputClass}
             />
           </label>
-          <div className="flex items-end md:col-span-2 xl:col-span-1">
+          <div className="flex items-end">
             <SubmitButton
               pendingLabel="Saving key..."
               className="h-11 w-full rounded-md bg-accent px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]"
@@ -404,7 +404,7 @@ export default async function ProviderAccountsPage() {
               <form
                 action={updateProviderAccountAction}
                 autoComplete="off"
-                className="mt-4 grid gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4"
+                className="mt-4 grid gap-x-4 gap-y-4 md:grid-cols-2 xl:grid-cols-[minmax(170px,1fr)_minmax(220px,1.35fr)_minmax(220px,1.35fr)_96px_112px_128px_140px]"
               >
                 <input
                   type="hidden"
@@ -484,7 +484,7 @@ export default async function ProviderAccountsPage() {
                     className={inputClass}
                   />
                 </label>
-                <div className="flex items-end md:col-span-2 xl:col-span-1">
+                <div className="flex items-end">
                   <SubmitButton
                     pendingLabel="Saving..."
                     className="h-11 w-full rounded-md bg-accent px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]"
