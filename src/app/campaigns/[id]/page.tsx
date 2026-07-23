@@ -127,6 +127,11 @@ export default async function CampaignPage({
           ))}
         </div>
       </section>
+      {campaign.metadata?.preparationInvalidated ? (
+        <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Audience changed after preparation. Prepare again before sending.
+        </div>
+      ) : null}
       <PrepareCampaignButton campaignId={id} />
     </>
   );

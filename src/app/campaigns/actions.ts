@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  audienceSegments,
   auditLogs,
   campaigns,
   campaignRecipients,
@@ -62,11 +63,24 @@ const campaignSchema = z
 export async function createCampaignAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = campaignSchema.parse(Object.fromEntries(formData));
+  const recipientFilters = buildCampaignRecipientFilters({
+    segmentId: formData.get("segmentId"),
+  });
+  if (recipientFilters.segmentId) {
+    const segment = await db.query.audienceSegments.findFirst({
+      where: and(
+        eq(audienceSegments.workspaceId, admin.workspaceId),
+        eq(audienceSegments.id, recipientFilters.segmentId),
+      ),
+    });
+    if (!segment) throw new Error("Selected segment was not found.");
+  }
   const [campaign] = await db
     .insert(campaigns)
     .values({
       ...data,
       replyTo: data.replyTo || null,
+      metadata: { recipientFilters },
       workspaceId: admin.workspaceId,
       createdBy: admin.id,
     })
@@ -92,6 +106,7 @@ export async function updateCampaignAction(formData: FormData) {
     return null;
   };
   const recipientFilters = buildCampaignRecipientFilters({
+    segmentId: formData.get("segmentId"),
     tagSlugs: formData.getAll("tagSlugs"),
     locale: formData.get("filterLocale"),
     platform: formData.get("filterPlatform"),
@@ -103,6 +118,20 @@ export async function updateCampaignAction(formData: FormData) {
   });
   if (!existing || existing.workspaceId !== admin.workspaceId)
     throw new Error("Campaign not found.");
+  if (recipientFilters.segmentId) {
+    const segment = await db.query.audienceSegments.findFirst({
+      where: and(
+        eq(audienceSegments.workspaceId, admin.workspaceId),
+        eq(audienceSegments.id, recipientFilters.segmentId),
+      ),
+    });
+    if (!segment) throw new Error("Selected segment was not found.");
+  }
+  const shouldInvalidate =
+    existing.status !== "draft" &&
+    !["sending", "completed", "cancelled", "failed", "archived"].includes(
+      existing.status,
+    );
   await db.transaction(async (tx) => {
     await tx
       .update(campaigns)
@@ -110,15 +139,14 @@ export async function updateCampaignAction(formData: FormData) {
         ...data,
         replyTo: data.replyTo || null,
         updatedAt: new Date(),
-        metadata:
-          existing.status === "draft"
-            ? { ...existing.metadata, recipientFilters }
-            : {
-                ...existing.metadata,
-                recipientFilters,
-                preparationInvalidated: true,
-                preparationInvalidatedAt: new Date().toISOString(),
-              },
+        metadata: !shouldInvalidate
+          ? { ...existing.metadata, recipientFilters }
+          : {
+              ...existing.metadata,
+              recipientFilters,
+              preparationInvalidated: true,
+              preparationInvalidatedAt: new Date().toISOString(),
+            },
       })
       .where(eq(campaigns.id, campaignId));
     await tx.insert(auditLogs).values({
@@ -170,7 +198,13 @@ export async function prepareCampaignByIdAction(campaignId: string) {
     if (!campaign || campaign.workspaceId !== admin.workspaceId) {
       return { ok: false as const, error: "Campaign not found." };
     }
-    if (!["draft", "preparing"].includes(campaign.status)) {
+    const canRefreshPreparedAudience =
+      campaign.status === "ready" &&
+      Boolean(campaign.metadata?.preparationInvalidated);
+    if (
+      !["draft", "preparing"].includes(campaign.status) &&
+      !canRefreshPreparedAudience
+    ) {
       return {
         ok: false as const,
         error: `Campaign cannot be prepared while it is ${campaign.status}.`,
@@ -180,6 +214,50 @@ export async function prepareCampaignByIdAction(campaignId: string) {
       where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
     });
     if (existingPrepared) {
+      const alreadySent = await db.query.campaignRecipients.findFirst({
+        where: and(
+          eq(campaignRecipients.campaignId, parsedCampaignId.data),
+          sql`${campaignRecipients.sentAt} is not null`,
+        ),
+      });
+      if (campaign.metadata?.preparationInvalidated && !alreadySent) {
+        await db.transaction(async (tx) => {
+          await tx
+            .delete(campaignRecipients)
+            .where(eq(campaignRecipients.campaignId, parsedCampaignId.data));
+          await tx
+            .update(campaigns)
+            .set({ status: "preparing", updatedAt: new Date() })
+            .where(eq(campaigns.id, parsedCampaignId.data));
+        });
+      } else {
+        await ensureMainWave(parsedCampaignId.data);
+        if (campaign.status !== "ready") {
+          await db.transaction(async (tx) => {
+            await tx
+              .update(campaigns)
+              .set({
+                status: "ready",
+                preparedAt: campaign.preparedAt ?? new Date(),
+                updatedAt: new Date(),
+              })
+              .where(eq(campaigns.id, parsedCampaignId.data));
+            await tx
+              .update(campaignWaves)
+              .set({ status: "ready", updatedAt: new Date() })
+              .where(eq(campaignWaves.campaignId, parsedCampaignId.data));
+          });
+        }
+        return {
+          ok: true as const,
+          message: "Campaign already has prepared recipients.",
+        };
+      }
+    }
+    const preparedAfterCleanup = await db.query.campaignRecipients.findFirst({
+      where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
+    });
+    if (preparedAfterCleanup) {
       await ensureMainWave(parsedCampaignId.data);
       if (campaign.status !== "ready") {
         await db.transaction(async (tx) => {
@@ -235,6 +313,17 @@ export async function prepareCampaignByIdAction(campaignId: string) {
       };
     }
     const { preparedCount } = await prepareCampaign(parsedCampaignId.data);
+    await db
+      .update(campaigns)
+      .set({
+        metadata: {
+          ...campaign.metadata,
+          preparationInvalidated: false,
+          audiencePreparedAt: new Date().toISOString(),
+        },
+        updatedAt: new Date(),
+      })
+      .where(eq(campaigns.id, parsedCampaignId.data));
     await db.insert(auditLogs).values({
       workspaceId: admin.workspaceId,
       adminUserId: admin.id,
@@ -280,6 +369,11 @@ export async function launchCampaignAction(formData: FormData) {
   }
   if (campaign.status !== "ready") {
     throw new Error("Prepare the campaign before sending.");
+  }
+  if (campaign.metadata?.preparationInvalidated) {
+    throw new Error(
+      "Audience changed. Prepare the campaign again before sending.",
+    );
   }
   let waves = await db.query.campaignWaves.findMany({
     where: eq(campaignWaves.campaignId, data.campaignId),

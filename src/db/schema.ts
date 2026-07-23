@@ -151,6 +151,14 @@ export const providerAccountStatusEnum = pgEnum("provider_account_status", [
   "paused",
   "failed",
 ]);
+export const audienceSegmentTypeEnum = pgEnum("audience_segment_type", [
+  "manual",
+  "dynamic",
+]);
+export const segmentTagMatchModeEnum = pgEnum("segment_tag_match_mode", [
+  "any",
+  "all",
+]);
 
 export const workspaces = pgTable("workspaces", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -374,6 +382,70 @@ export const recipientTagAssignments = pgTable(
       table.workspaceId,
     ),
     recipientIdx: index("recipient_tag_assignments_recipient_idx").on(
+      table.recipientId,
+    ),
+  }),
+);
+
+export const audienceSegments = pgTable(
+  "audience_segments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspaces.id, { onDelete: "cascade" })
+      .notNull(),
+    name: text("name").notNull(),
+    slug: text("slug").notNull(),
+    description: text("description"),
+    segmentType: audienceSegmentTypeEnum("segment_type").notNull(),
+    tagMatchMode: segmentTagMatchModeEnum("tag_match_mode")
+      .notNull()
+      .default("any"),
+    rules: jsonb("rules")
+      .$type<Record<string, unknown>>()
+      .default({})
+      .notNull(),
+    updatedBy: uuid("updated_by").references(() => adminUsers.id, {
+      onDelete: "set null",
+    }),
+    ...timestamps,
+  },
+  (table) => ({
+    uniq: unique().on(table.workspaceId, table.slug),
+    workspaceIdx: index("audience_segments_workspace_idx").on(
+      table.workspaceId,
+      table.segmentType,
+    ),
+  }),
+);
+
+export const audienceSegmentMembers = pgTable(
+  "audience_segment_members",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    workspaceId: uuid("workspace_id")
+      .references(() => workspaces.id, { onDelete: "cascade" })
+      .notNull(),
+    segmentId: uuid("segment_id")
+      .references(() => audienceSegments.id, { onDelete: "cascade" })
+      .notNull(),
+    recipientId: uuid("recipient_id")
+      .references(() => recipients.id, { onDelete: "cascade" })
+      .notNull(),
+    addedBy: uuid("added_by").references(() => adminUsers.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    uniq: unique().on(table.segmentId, table.recipientId),
+    workspaceIdx: index("audience_segment_members_workspace_idx").on(
+      table.workspaceId,
+      table.segmentId,
+    ),
+    recipientIdx: index("audience_segment_members_recipient_idx").on(
       table.recipientId,
     ),
   }),

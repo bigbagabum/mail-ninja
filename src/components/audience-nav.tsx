@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const links = [
   ["/recipients", "Recipients"],
+  ["/segments", "Segments"],
   ["/imports", "Imports"],
   ["/suppressions", "Exclusions"],
 ] as const;
@@ -15,7 +16,7 @@ export function AudienceNav() {
     <div className="mb-6 flex flex-col gap-3 rounded-[30px] border border-white/60 bg-slate-300/70 p-2 shadow-sm backdrop-blur md:flex-row md:items-center md:justify-between">
       <nav
         aria-label="Audience management"
-        className="grid grid-cols-3 gap-1 rounded-[24px] text-sm font-semibold md:inline-grid md:w-fit"
+        className="grid grid-cols-4 gap-1 rounded-[24px] text-sm font-semibold md:inline-grid md:w-fit"
       >
         {links.map(([href, label]) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);

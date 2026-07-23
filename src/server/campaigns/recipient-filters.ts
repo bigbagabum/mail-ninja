@@ -1,12 +1,15 @@
-import { and, eq, inArray, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  audienceSegmentMembers,
+  audienceSegments,
   recipientTagAssignments,
   recipientTags,
   recipients,
 } from "@/db/schema";
 
 export type CampaignRecipientFilters = {
+  segmentId: string | null;
   tagSlugs: string[];
   locale: string | null;
   platform: string | null;
@@ -15,6 +18,7 @@ export type CampaignRecipientFilters = {
 };
 
 const defaultFilters: CampaignRecipientFilters = {
+  segmentId: null,
   tagSlugs: [],
   locale: null,
   platform: null,
@@ -40,6 +44,7 @@ export function parseCampaignRecipientFilters(
       ? (metadata.recipientFilters as Record<string, unknown>)
       : {};
   return {
+    segmentId: cleanString(raw.segmentId),
     tagSlugs: Array.isArray(raw.tagSlugs)
       ? raw.tagSlugs.filter(
           (value): value is string =>
@@ -54,6 +59,7 @@ export function parseCampaignRecipientFilters(
 }
 
 export function buildCampaignRecipientFilters(input: {
+  segmentId?: unknown;
   tagSlugs?: unknown[];
   locale?: unknown;
   platform?: unknown;
@@ -61,6 +67,7 @@ export function buildCampaignRecipientFilters(input: {
   marketingConsent?: unknown;
 }): CampaignRecipientFilters {
   return {
+    segmentId: cleanString(input.segmentId),
     tagSlugs:
       input.tagSlugs
         ?.filter((value): value is string => typeof value === "string")
@@ -76,6 +83,81 @@ export async function loadFilteredRecipients(
   workspaceId: string,
   filters: CampaignRecipientFilters,
 ) {
+  if (filters.segmentId) {
+    const segment = await db.query.audienceSegments.findFirst({
+      where: and(
+        eq(audienceSegments.workspaceId, workspaceId),
+        eq(audienceSegments.id, filters.segmentId),
+      ),
+    });
+    if (!segment) return [];
+    return loadSegmentRecipients(workspaceId, segment);
+  }
+  return loadRuleRecipients(workspaceId, filters);
+}
+
+export async function loadSegmentRecipients(
+  workspaceId: string,
+  segment: typeof audienceSegments.$inferSelect,
+) {
+  if (segment.segmentType === "manual") {
+    const memberships = await db
+      .select({ recipientId: audienceSegmentMembers.recipientId })
+      .from(audienceSegmentMembers)
+      .where(
+        and(
+          eq(audienceSegmentMembers.workspaceId, workspaceId),
+          eq(audienceSegmentMembers.segmentId, segment.id),
+        ),
+      );
+    if (memberships.length === 0) return [];
+    return db.query.recipients.findMany({
+      where: and(
+        eq(recipients.workspaceId, workspaceId),
+        inArray(
+          recipients.id,
+          memberships.map((row) => row.recipientId),
+        ),
+      ),
+      orderBy: (table, { asc, desc }) => [
+        desc(table.priorityScore),
+        asc(table.id),
+      ],
+    });
+  }
+  const rules = parseSegmentRules(segment.rules);
+  return loadRuleRecipients(
+    workspaceId,
+    {
+      segmentId: null,
+      tagSlugs: rules.tagSlugs,
+      locale: null,
+      platform: null,
+      emailVerified: null,
+      marketingConsent: null,
+    },
+    segment.tagMatchMode,
+  );
+}
+
+export function parseSegmentRules(
+  rules: Record<string, unknown> | null | undefined,
+) {
+  return {
+    tagSlugs: Array.isArray(rules?.tagSlugs)
+      ? rules.tagSlugs.filter(
+          (value): value is string =>
+            typeof value === "string" && Boolean(value),
+        )
+      : [],
+  };
+}
+
+export async function loadRuleRecipients(
+  workspaceId: string,
+  filters: CampaignRecipientFilters,
+  tagMatchMode: "any" | "all" = "any",
+) {
   const conditions: SQL[] = [eq(recipients.workspaceId, workspaceId)];
   if (filters.locale) conditions.push(eq(recipients.locale, filters.locale));
   if (filters.platform)
@@ -87,21 +169,37 @@ export async function loadFilteredRecipients(
     conditions.push(eq(recipients.marketingConsent, filters.marketingConsent));
   }
   if (filters.tagSlugs.length > 0) {
+    const tagRows = await db.query.recipientTags.findMany({
+      where: and(
+        eq(recipientTags.workspaceId, workspaceId),
+        inArray(recipientTags.slug, filters.tagSlugs),
+      ),
+    });
+    if (tagRows.length === 0) return [];
     const tagAssignments = await db
-      .select({ recipientId: recipientTagAssignments.recipientId })
+      .select({
+        recipientId: recipientTagAssignments.recipientId,
+        tagCount: sql<number>`count(distinct ${recipientTagAssignments.tagId})::int`,
+      })
       .from(recipientTagAssignments)
-      .innerJoin(
-        recipientTags,
-        eq(recipientTagAssignments.tagId, recipientTags.id),
-      )
       .where(
         and(
           eq(recipientTagAssignments.workspaceId, workspaceId),
-          inArray(recipientTags.slug, filters.tagSlugs),
+          inArray(
+            recipientTagAssignments.tagId,
+            tagRows.map((tag) => tag.id),
+          ),
         ),
-      );
+      )
+      .groupBy(recipientTagAssignments.recipientId);
     const recipientIds = [
-      ...new Set(tagAssignments.map((row) => row.recipientId)),
+      ...new Set(
+        tagAssignments
+          .filter(
+            (row) => tagMatchMode === "any" || row.tagCount === tagRows.length,
+          )
+          .map((row) => row.recipientId),
+      ),
     ];
     if (recipientIds.length === 0) return [];
     conditions.push(inArray(recipients.id, recipientIds));
