@@ -8,7 +8,7 @@ import {
 } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
-import { PageHeader, Badge, InfoNote } from "@/components/ui";
+import { PageHeader, Badge, InfoNote, ButtonLink } from "@/components/ui";
 import {
   launchCampaignAction,
   sendCampaignTestEmailAction,
@@ -47,8 +47,22 @@ export default async function SendPage({
     campaign.status === "ready" && waves.length > 0 && sendableCount > 0;
   return (
     <>
-      <PageHeader title="Send Campaign" />
+      <PageHeader
+        title={`${campaign.name} Send & Test`}
+        action={
+          <Badge tone={canLaunch ? "good" : "warn"}>{campaign.status}</Badge>
+        }
+      />
       <CampaignTabs id={id} />
+      {campaign.status !== "ready" ? (
+        <div className="mb-4">
+          <InfoNote>
+            Prepare the campaign before launch. Test emails are still available
+            as soon as the campaign has at least one variant and provider
+            credentials are configured.
+          </InfoNote>
+        </div>
+      ) : null}
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded border border-line bg-white p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
@@ -102,6 +116,9 @@ export default async function SendPage({
             >
               Queue campaign
             </button>
+            {!canLaunch ? (
+              <ButtonLink href={`/campaigns/${id}`}>Open checklist</ButtonLink>
+            ) : null}
           </form>
         </section>
 

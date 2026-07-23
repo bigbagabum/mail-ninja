@@ -18,10 +18,7 @@ import { enqueueJob } from "@/server/jobs/queue";
 import { prepareCampaign } from "@/server/campaigns/prepare";
 import { buildCampaignRecipientFilters } from "@/server/campaigns/recipient-filters";
 import { createProviderForWorkspace } from "@/server/provider/resend";
-import {
-  hasUnsubscribeLink,
-  renderTemplate,
-} from "@/lib/templates";
+import { hasUnsubscribeLink, renderTemplate } from "@/lib/templates";
 import { normalizeEmail } from "@/lib/normalization";
 
 function slugifyCampaignKey(value: string) {
@@ -194,6 +191,22 @@ export async function prepareCampaignByIdAction(campaignId: string) {
       where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
     });
     if (existingPrepared) {
+      if (campaign.status !== "ready") {
+        await db.transaction(async (tx) => {
+          await tx
+            .update(campaigns)
+            .set({
+              status: "ready",
+              preparedAt: campaign.preparedAt ?? new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(campaigns.id, parsedCampaignId.data));
+          await tx
+            .update(campaignWaves)
+            .set({ status: "ready", updatedAt: new Date() })
+            .where(eq(campaignWaves.campaignId, parsedCampaignId.data));
+        });
+      }
       return {
         ok: true as const,
         message: "Campaign already has prepared recipients.",

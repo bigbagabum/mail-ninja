@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
-import { campaignRecipients, campaigns } from "@/db/schema";
+import { campaignRecipients, campaigns, recipients } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import {
@@ -29,10 +29,15 @@ export default async function CampaignRecipientsPage({
     where: eq(campaigns.id, id),
   });
   if (!campaign) return <PageHeader title="Campaign not found" />;
-  const rows = await db.query.campaignRecipients.findMany({
-    where: eq(campaignRecipients.campaignId, id),
-    limit: 200,
-  });
+  const rows = await db
+    .select({
+      campaignRecipient: campaignRecipients,
+      recipient: recipients,
+    })
+    .from(campaignRecipients)
+    .innerJoin(recipients, eq(campaignRecipients.recipientId, recipients.id))
+    .where(eq(campaignRecipients.campaignId, id))
+    .limit(200);
   const filters = parseCampaignRecipientFilters(campaign.metadata);
   const selectedRecipients = await loadFilteredRecipients(
     admin.workspaceId,
@@ -146,11 +151,20 @@ export default async function CampaignRecipientsPage({
               </tr>
             </thead>
             <tbody>
-              {rows.map((row) => (
+              {rows.map(({ campaignRecipient: row, recipient }) => (
                 <tr key={row.id} className="border-t border-line">
-                  <td className="p-3">{row.recipientId}</td>
+                  <td className="p-3">
+                    <div className="font-medium">{recipient.email}</div>
+                    <div className="text-xs text-muted">
+                      {[recipient.firstName, recipient.lastName]
+                        .filter(Boolean)
+                        .join(" ") ||
+                        recipient.externalId ||
+                        recipient.id}
+                    </div>
+                  </td>
                   <td>
-                    <Badge>{row.status}</Badge>
+                    <Badge tone={statusTone(row.status)}>{row.status}</Badge>
                   </td>
                   <td>{row.waveId}</td>
                   <td>{row.openCount}</td>
@@ -163,4 +177,12 @@ export default async function CampaignRecipientsPage({
       )}
     </>
   );
+}
+
+function statusTone(status: typeof campaignRecipients.$inferSelect.status) {
+  if (["delivered", "opened", "clicked"].includes(status)) return "good";
+  if (["bounced", "complained", "failed", "suppressed"].includes(status))
+    return "bad";
+  if (["unsubscribed", "delayed"].includes(status)) return "warn";
+  return "neutral";
 }

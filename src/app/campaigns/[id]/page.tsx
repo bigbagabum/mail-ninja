@@ -8,7 +8,7 @@ import {
   recipients,
 } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
-import { Badge, PageHeader } from "@/components/ui";
+import { Badge, ButtonLink, PageHeader } from "@/components/ui";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { PrepareCampaignButton } from "@/components/prepare-campaign-button";
 import { hasUnsubscribeLink } from "@/lib/templates";
@@ -95,7 +95,12 @@ export default async function CampaignPage({
   ];
   return (
     <>
-      <PageHeader title={campaign.name} />
+      <PageHeader
+        title={campaign.name}
+        action={
+          <ButtonLink href={`/campaigns/${id}/send`}>Send & Test</ButtonLink>
+        }
+      />
       <CampaignTabs id={id} />
       <div className="grid gap-4 md:grid-cols-3">
         <div className="rounded border border-line bg-white p-4">

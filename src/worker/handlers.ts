@@ -7,6 +7,7 @@ import {
   campaignVariants,
   campaignWaves,
   recipients,
+  workspaceSettings,
 } from "@/db/schema";
 import { logger } from "@/lib/logger";
 import { renderTemplate } from "@/lib/templates";
@@ -60,6 +61,7 @@ function sleep(ms: number) {
 
 function buildVariables(input: {
   campaignName: string;
+  unsubscribeUrl: string;
   recipient: typeof recipients.$inferSelect;
 }) {
   return {
@@ -71,8 +73,19 @@ function buildVariables(input: {
     platform: input.recipient.platform,
     external_id: input.recipient.externalId,
     campaign_name: input.campaignName,
-    unsubscribe_url: `https://example.com/unsubscribe/${input.recipient.id}`,
+    unsubscribe_url: input.unsubscribeUrl,
   };
+}
+
+async function getPublicBaseUrl(workspaceId: string) {
+  const settings = await db.query.workspaceSettings.findFirst({
+    where: eq(workspaceSettings.workspaceId, workspaceId),
+  });
+  return (
+    settings?.publicBaseUrl ??
+    process.env.APP_BASE_URL ??
+    "http://localhost:3000"
+  ).replace(/\/$/, "");
 }
 
 async function sendProviderBroadcastWave(waveId: string) {
@@ -117,6 +130,7 @@ async function sendProviderBroadcastWave(waveId: string) {
   }
 
   const { provider } = await createProviderForWorkspace(campaign.workspaceId);
+  const publicBaseUrl = await getPublicBaseUrl(campaign.workspaceId);
   await db
     .update(campaignWaves)
     .set({ status: "sending", startedAt: new Date(), updatedAt: new Date() })
@@ -126,6 +140,7 @@ async function sendProviderBroadcastWave(waveId: string) {
   for (const row of rows) {
     const variables = buildVariables({
       campaignName: campaign.name,
+      unsubscribeUrl: `${publicBaseUrl}/unsubscribe/${row.campaignRecipient.id}`,
       recipient: row.recipient,
     });
     try {

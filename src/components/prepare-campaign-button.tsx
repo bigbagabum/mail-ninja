@@ -12,7 +12,8 @@ export function PrepareCampaignButton({ campaignId }: { campaignId: string }) {
   return (
     <div className="mt-6 rounded border border-amber-200 bg-amber-50 p-4">
       <p className="text-sm text-amber-900">
-        Preparation queues a background job, excludes active suppressions, resolves variants and assigns deterministic waves.
+        Preparation queues a background job, excludes active suppressions,
+        resolves variants and assigns deterministic waves.
       </p>
       {error ? <p className="mt-3 text-sm text-danger">{error}</p> : null}
       <button
@@ -27,10 +28,14 @@ export function PrepareCampaignButton({ campaignId }: { campaignId: string }) {
                 setError(result.error);
                 return;
               }
-              router.push(`/campaigns/${campaignId}/recipients`);
+              router.push(`/campaigns/${campaignId}/send`);
               router.refresh();
             } catch (caught) {
-              setError(caught instanceof Error ? caught.message : "Campaign preparation failed.");
+              setError(
+                caught instanceof Error
+                  ? caught.message
+                  : "Campaign preparation failed.",
+              );
             }
           });
         }}

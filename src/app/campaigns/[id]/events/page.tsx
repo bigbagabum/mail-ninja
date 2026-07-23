@@ -5,10 +5,16 @@ import { requireAdmin } from "@/server/auth/session";
 import { Badge, PageHeader } from "@/components/ui";
 import { CampaignTabs } from "@/components/campaign-tabs";
 
-export default async function CampaignEventsPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function CampaignEventsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   await requireAdmin();
   const { id } = await params;
-  const campaign = await db.query.campaigns.findFirst({ where: eq(campaigns.id, id) });
+  const campaign = await db.query.campaigns.findFirst({
+    where: eq(campaigns.id, id),
+  });
   if (!campaign) return <PageHeader title="Campaign not found" />;
 
   const rows = await db
@@ -20,11 +26,16 @@ export default async function CampaignEventsPage({ params }: { params: Promise<{
       providerMessageId: emailEvents.providerMessageId,
       providerBroadcastId: emailEvents.providerBroadcastId,
       providerAccountName: providerAccounts.name,
+      clickedUrl: emailEvents.clickedUrlNormalized,
+      eventTimestamp: emailEvents.eventTimestamp,
       receivedAt: emailEvents.receivedAt,
-      processingError: emailEvents.processingError
+      processingError: emailEvents.processingError,
     })
     .from(emailEvents)
-    .leftJoin(providerAccounts, eq(emailEvents.providerAccountId, providerAccounts.id))
+    .leftJoin(
+      providerAccounts,
+      eq(emailEvents.providerAccountId, providerAccounts.id),
+    )
     .where(eq(emailEvents.campaignId, id))
     .orderBy(emailEvents.receivedAt)
     .limit(200);
@@ -43,6 +54,8 @@ export default async function CampaignEventsPage({ params }: { params: Promise<{
               <th>API key</th>
               <th>Message</th>
               <th>Broadcast</th>
+              <th>URL</th>
+              <th>Event time</th>
               <th>Received</th>
               <th>Error</th>
             </tr>
@@ -51,18 +64,26 @@ export default async function CampaignEventsPage({ params }: { params: Promise<{
             {rows.map((event) => (
               <tr key={event.id} className="border-t border-line">
                 <td className="p-3">{event.eventType}</td>
-                <td><Badge>{event.processingStatus}</Badge></td>
+                <td>
+                  <Badge>{event.processingStatus}</Badge>
+                </td>
                 <td>{event.email}</td>
                 <td>{event.providerAccountName ?? "Environment key"}</td>
                 <td className="max-w-xs truncate">{event.providerMessageId}</td>
-                <td className="max-w-xs truncate">{event.providerBroadcastId}</td>
+                <td className="max-w-xs truncate">
+                  {event.providerBroadcastId}
+                </td>
+                <td className="max-w-xs truncate">{event.clickedUrl}</td>
+                <td>{event.eventTimestamp.toISOString()}</td>
                 <td>{event.receivedAt.toISOString()}</td>
                 <td className="max-w-xs truncate">{event.processingError}</td>
               </tr>
             ))}
             {rows.length === 0 ? (
               <tr>
-                <td className="p-3 text-muted" colSpan={8}>No events have been recorded for this campaign yet.</td>
+                <td className="p-3 text-muted" colSpan={10}>
+                  No events have been recorded for this campaign yet.
+                </td>
               </tr>
             ) : null}
           </tbody>
