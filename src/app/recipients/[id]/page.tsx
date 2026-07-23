@@ -27,7 +27,7 @@ export default async function RecipientPage({ params }: { params: Promise<{ id: 
           <label className="text-sm font-medium">Cohort<select name="priorityCohort" defaultValue={recipient.priorityCohort} className="mt-1 w-full rounded border-line"><option value="high_intent">high_intent</option><option value="engaged">engaged</option><option value="standard">standard</option><option value="low_confidence">low_confidence</option><option value="manual_priority">manual_priority</option></select></label>
         </div>
         <label className="text-sm font-medium">Notes<textarea name="priorityNotes" defaultValue={recipient.priorityNotes ?? ""} className="mt-1 w-full rounded border-line" /></label>
-        <p className="text-sm text-muted">Higher priority recipients are assigned to earlier campaign waves. Manual changes override import scoring.</p>
+        <p className="text-sm text-muted">Higher priority recipients are prepared first. Manual changes override import scoring.</p>
         <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">Save priority</button>
       </form>
       <h2 className="mb-3 mt-6 font-medium">Event history</h2>

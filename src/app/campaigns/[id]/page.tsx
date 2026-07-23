@@ -1,12 +1,7 @@
 import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 import { db } from "@/db";
-import {
-  campaignVariants,
-  campaignWaves,
-  campaigns,
-  recipients,
-} from "@/db/schema";
+import { campaignVariants, campaigns, recipients } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { Badge, ButtonLink, PageHeader } from "@/components/ui";
 import { CampaignTabs } from "@/components/campaign-tabs";
@@ -30,9 +25,6 @@ export default async function CampaignPage({
   if (!campaign) return <PageHeader title="Campaign not found" />;
   const variants = await db.query.campaignVariants.findMany({
     where: eq(campaignVariants.campaignId, id),
-  });
-  const waves = await db.query.campaignWaves.findMany({
-    where: eq(campaignWaves.campaignId, id),
   });
   const [recipientCount] = await db
     .select({ value: count() })
@@ -67,12 +59,6 @@ export default async function CampaignPage({
       ok: hasRequiredUnsubscribe,
       href: `/campaigns/${id}/variants`,
       action: "Edit variants",
-    },
-    {
-      label: "At least one wave exists",
-      ok: waves.length > 0,
-      href: `/campaigns/${id}/waves`,
-      action: "Add waves",
     },
     {
       label: "Recipients available",

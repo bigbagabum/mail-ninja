@@ -108,10 +108,10 @@ export default async function CampaignRecipientsPage({
             }
             detail={
               campaign.status === "draft"
-                ? "Review the selected audience above, add an email template and waves, then prepare the campaign."
+                ? "Review the selected audience above, add an email template, then prepare the campaign."
                 : campaign.status === "preparing"
                   ? "Preparation is still running. Refresh this page in a moment."
-                  : "Preparation completed without campaign recipients. Check recipient filters, suppressions, variants, and wave configuration."
+                  : "Preparation completed without campaign recipients. Check recipient filters, suppressions, and variants."
             }
           />
           <div className="mt-3 flex gap-3 text-sm">
@@ -127,12 +127,6 @@ export default async function CampaignRecipientsPage({
             >
               Check variants
             </Link>
-            <Link
-              href={`/campaigns/${id}/waves`}
-              className="text-accent hover:underline"
-            >
-              Check waves
-            </Link>
           </div>
           {campaign.status === "draft" || campaign.status === "preparing" ? (
             <PrepareCampaignButton campaignId={id} />
@@ -145,7 +139,6 @@ export default async function CampaignRecipientsPage({
               <tr>
                 <th className="p-3">Recipient</th>
                 <th>Status</th>
-                <th>Wave</th>
                 <th>Opens</th>
                 <th>Clicks</th>
               </tr>
@@ -166,7 +159,6 @@ export default async function CampaignRecipientsPage({
                   <td>
                     <Badge tone={statusTone(row.status)}>{row.status}</Badge>
                   </td>
-                  <td>{row.waveId}</td>
                   <td>{row.openCount}</td>
                   <td>{row.clickCount}</td>
                 </tr>

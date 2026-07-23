@@ -27,14 +27,26 @@ export async function prepareCampaign(campaignId: string) {
     where: eq(campaignVariants.campaignId, campaignId),
     orderBy: (table, { asc }) => [asc(table.createdAt), asc(table.id)],
   });
-  const waves = await db.query.campaignWaves.findMany({
+  const existingWaves = await db.query.campaignWaves.findMany({
     where: eq(campaignWaves.campaignId, campaignId),
     orderBy: (table, { asc }) => [asc(table.position)],
   });
   if (variants.length === 0) {
     throw new Error("At least one email template is required.");
   }
-  if (waves.length === 0) throw new Error("At least one wave is required.");
+  const waves =
+    existingWaves.length > 0
+      ? existingWaves
+      : await db
+          .insert(campaignWaves)
+          .values({
+            campaignId,
+            name: "Main send",
+            position: 1,
+            recipientLimit: null,
+            status: "draft",
+          })
+          .returning();
   const filters = parseCampaignRecipientFilters(campaign.metadata);
   const selected = await loadFilteredRecipients(campaign.workspaceId, filters);
   const suppressionRows = await db.query.suppressions.findMany({

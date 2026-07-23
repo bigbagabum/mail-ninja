@@ -131,35 +131,23 @@ export async function updateCampaignAction(formData: FormData) {
   redirect(`/campaigns/${campaignId}/edit`);
 }
 
-const waveSchema = z.object({
-  campaignId: z.string().uuid(),
-  name: z.string().min(1),
-  position: z.coerce.number().int().positive(),
-  recipientLimit: z
-    .union([z.coerce.number().int().positive(), z.literal("")])
-    .optional(),
-});
-
-export async function createWaveAction(formData: FormData) {
-  await requireAdmin();
-  const data = waveSchema.parse(Object.fromEntries(formData));
-  await db
+async function ensureMainWave(campaignId: string) {
+  const existing = await db.query.campaignWaves.findFirst({
+    where: eq(campaignWaves.campaignId, campaignId),
+    orderBy: (table, { asc }) => [asc(table.position)],
+  });
+  if (existing) return existing;
+  const [wave] = await db
     .insert(campaignWaves)
     .values({
-      campaignId: data.campaignId,
-      name: data.name,
-      position: data.position,
-      recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit,
+      campaignId,
+      name: "Main send",
+      position: 1,
+      recipientLimit: null,
+      status: "ready",
     })
-    .onConflictDoUpdate({
-      target: [campaignWaves.campaignId, campaignWaves.position],
-      set: {
-        name: data.name,
-        recipientLimit: data.recipientLimit === "" ? null : data.recipientLimit,
-        updatedAt: new Date(),
-      },
-    });
-  redirect(`/campaigns/${data.campaignId}/waves`);
+    .returning();
+  return wave;
 }
 
 export async function prepareCampaignAction(formData: FormData) {
@@ -191,6 +179,7 @@ export async function prepareCampaignByIdAction(campaignId: string) {
       where: eq(campaignRecipients.campaignId, parsedCampaignId.data),
     });
     if (existingPrepared) {
+      await ensureMainWave(parsedCampaignId.data);
       if (campaign.status !== "ready") {
         await db.transaction(async (tx) => {
           await tx
@@ -234,15 +223,7 @@ export async function prepareCampaignByIdAction(campaignId: string) {
           "Marketing, newsletter and announcement campaigns require an unsubscribe link.",
       };
     }
-    const wave = await db.query.campaignWaves.findFirst({
-      where: eq(campaignWaves.campaignId, parsedCampaignId.data),
-    });
-    if (!wave) {
-      return {
-        ok: false as const,
-        error: "Add at least one campaign wave before preparation.",
-      };
-    }
+    await ensureMainWave(parsedCampaignId.data);
     const recipient = await db.query.recipients.findFirst({
       where: eq(recipients.workspaceId, admin.workspaceId),
     });
@@ -272,18 +253,6 @@ export async function prepareCampaignByIdAction(campaignId: string) {
   }
 }
 
-export async function sendWaveAction(formData: FormData) {
-  const admin = await requireAdmin();
-  const waveId = z.string().uuid().parse(formData.get("waveId"));
-  await enqueueJob({
-    workspaceId: admin.workspaceId,
-    type: "send_provider_broadcast",
-    payload: { waveId },
-    priority: 10,
-  });
-  redirect(`/jobs`);
-}
-
 const launchCampaignSchema = z.object({
   campaignId: z.string().uuid(),
   sendMode: z.enum(["now", "scheduled"]),
@@ -311,11 +280,13 @@ export async function launchCampaignAction(formData: FormData) {
   if (campaign.status !== "ready") {
     throw new Error("Prepare the campaign before sending.");
   }
-  const waves = await db.query.campaignWaves.findMany({
+  let waves = await db.query.campaignWaves.findMany({
     where: eq(campaignWaves.campaignId, data.campaignId),
     orderBy: (table, { asc }) => [asc(table.position)],
   });
-  if (waves.length === 0) throw new Error("Add at least one campaign wave.");
+  if (waves.length === 0) {
+    waves = [await ensureMainWave(data.campaignId)];
+  }
 
   const runAfter =
     data.sendMode === "scheduled"
@@ -341,14 +312,11 @@ export async function launchCampaignAction(formData: FormData) {
       .returning({ id: campaigns.id });
     if (!launched) throw new Error("Campaign has already been launched.");
     for (const wave of waves) {
-      const scheduledAt = new Date(
-        runAfter.getTime() + (wave.position - 1) * 60_000,
-      );
       await tx
         .update(campaignWaves)
         .set({
           status: data.sendMode === "now" ? "sending" : "ready",
-          scheduledAt,
+          scheduledAt: runAfter,
           startedAt: data.sendMode === "now" ? now : null,
           updatedAt: now,
         })
@@ -361,15 +329,15 @@ export async function launchCampaignAction(formData: FormData) {
         entityId: wave.id,
         metadata: {
           campaignId: data.campaignId,
-          scheduledAt: scheduledAt.toISOString(),
+          scheduledAt: runAfter.toISOString(),
         },
       });
       await tx.insert(jobs).values({
         workspaceId: admin.workspaceId,
         type: "send_provider_broadcast",
         payload: { campaignId: data.campaignId, waveId: wave.id },
-        priority: 10 + wave.position,
-        runAfter: scheduledAt,
+        priority: 10,
+        runAfter,
       });
     }
     await tx.insert(auditLogs).values({

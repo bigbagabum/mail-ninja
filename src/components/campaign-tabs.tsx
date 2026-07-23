@@ -5,7 +5,6 @@ export function CampaignTabs({ id }: { id: string }) {
     ["", "Overview"],
     ["/variants", "Variants"],
     ["/recipients", "Recipients"],
-    ["/waves", "Waves"],
     ["/send", "Send & Test"],
     ["/analytics", "Report"],
     ["/links", "Links"],
