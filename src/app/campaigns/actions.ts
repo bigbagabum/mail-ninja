@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   audienceSegments,
@@ -99,34 +99,11 @@ export async function updateCampaignAction(formData: FormData) {
   const admin = await requireAdmin();
   const campaignId = z.string().uuid().parse(formData.get("campaignId"));
   const data = campaignSchema.parse(Object.fromEntries(formData));
-  const filterBoolean = (name: string) => {
-    const value = formData.get(name);
-    if (value === "true") return true;
-    if (value === "false") return false;
-    return null;
-  };
-  const recipientFilters = buildCampaignRecipientFilters({
-    segmentId: formData.get("segmentId"),
-    tagSlugs: formData.getAll("tagSlugs"),
-    locale: formData.get("filterLocale"),
-    platform: formData.get("filterPlatform"),
-    emailVerified: filterBoolean("filterEmailVerified"),
-    marketingConsent: filterBoolean("filterMarketingConsent"),
-  });
   const existing = await db.query.campaigns.findFirst({
     where: eq(campaigns.id, campaignId),
   });
   if (!existing || existing.workspaceId !== admin.workspaceId)
     throw new Error("Campaign not found.");
-  if (recipientFilters.segmentId) {
-    const segment = await db.query.audienceSegments.findFirst({
-      where: and(
-        eq(audienceSegments.workspaceId, admin.workspaceId),
-        eq(audienceSegments.id, recipientFilters.segmentId),
-      ),
-    });
-    if (!segment) throw new Error("Selected segment was not found.");
-  }
   const shouldInvalidate =
     existing.status !== "draft" &&
     !["sending", "completed", "cancelled", "failed", "archived"].includes(
@@ -140,10 +117,9 @@ export async function updateCampaignAction(formData: FormData) {
         replyTo: data.replyTo || null,
         updatedAt: new Date(),
         metadata: !shouldInvalidate
-          ? { ...existing.metadata, recipientFilters }
+          ? existing.metadata
           : {
               ...existing.metadata,
-              recipientFilters,
               preparationInvalidated: true,
               preparationInvalidatedAt: new Date().toISOString(),
             },
@@ -158,6 +134,80 @@ export async function updateCampaignAction(formData: FormData) {
     });
   });
   redirect(`/campaigns/${campaignId}/edit`);
+}
+
+export async function updateCampaignAudienceAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const campaignId = z.string().uuid().parse(formData.get("campaignId"));
+  const audienceMode = z
+    .enum(["all", "segment", "manual"])
+    .parse(formData.get("audienceMode") || "all");
+  const campaign = await db.query.campaigns.findFirst({
+    where: eq(campaigns.id, campaignId),
+  });
+  if (!campaign || campaign.workspaceId !== admin.workspaceId) {
+    throw new Error("Campaign not found.");
+  }
+  if (
+    ["sending", "completed", "cancelled", "failed", "archived"].includes(
+      campaign.status,
+    )
+  ) {
+    throw new Error("Audience can only be changed before first send.");
+  }
+  const segmentId =
+    audienceMode === "segment" ? formData.get("segmentId") : null;
+  const manualRecipientIds =
+    audienceMode === "manual" ? formData.getAll("manualRecipientIds") : [];
+  const recipientFilters = buildCampaignRecipientFilters({
+    segmentId,
+    manualRecipientIds,
+  });
+  if (audienceMode === "segment") {
+    if (!recipientFilters.segmentId) throw new Error("Choose a segment.");
+    const segment = await db.query.audienceSegments.findFirst({
+      where: and(
+        eq(audienceSegments.workspaceId, admin.workspaceId),
+        eq(audienceSegments.id, recipientFilters.segmentId),
+      ),
+    });
+    if (!segment) throw new Error("Selected segment was not found.");
+  }
+  if (
+    audienceMode === "manual" &&
+    recipientFilters.manualRecipientIds.length === 0
+  ) {
+    throw new Error("Choose at least one recipient.");
+  }
+  const validManualRecipients =
+    recipientFilters.manualRecipientIds.length > 0
+      ? await db.query.recipients.findMany({
+          where: and(
+            eq(recipients.workspaceId, admin.workspaceId),
+            inArray(recipients.id, recipientFilters.manualRecipientIds),
+          ),
+        })
+      : [];
+  if (
+    audienceMode === "manual" &&
+    validManualRecipients.length !== recipientFilters.manualRecipientIds.length
+  ) {
+    throw new Error("One or more selected recipients were not found.");
+  }
+  await db
+    .update(campaigns)
+    .set({
+      metadata: {
+        ...campaign.metadata,
+        recipientFilters,
+        preparationInvalidated: campaign.status !== "draft",
+        preparationInvalidatedAt:
+          campaign.status !== "draft" ? new Date().toISOString() : undefined,
+      },
+      updatedAt: new Date(),
+    })
+    .where(eq(campaigns.id, campaignId));
+  redirect(`/campaigns/${campaignId}/recipients`);
 }
 
 async function ensureMainWave(campaignId: string) {

@@ -2,16 +2,9 @@ import { createCampaignAction } from "../actions";
 import { requireAdmin } from "@/server/auth/session";
 import { env } from "@/lib/env";
 import { PageHeader } from "@/components/ui";
-import { db } from "@/db";
-import { audienceSegments } from "@/db/schema";
-import { eq } from "drizzle-orm";
 
 export default async function NewCampaignPage() {
-  const admin = await requireAdmin();
-  const segments = await db.query.audienceSegments.findMany({
-    where: eq(audienceSegments.workspaceId, admin.workspaceId),
-    orderBy: (table, { asc }) => [asc(table.name)],
-  });
+  await requireAdmin();
   return (
     <>
       <PageHeader title="New Campaign" />
@@ -96,21 +89,6 @@ export default async function NewCampaignPage() {
             defaultValue={env.DEFAULT_REPLY_TO}
             className="mt-1 w-full rounded border-line"
           />
-        </label>
-        <label className="text-sm font-medium">
-          Audience segment
-          <select
-            name="segmentId"
-            defaultValue=""
-            className="mt-1 w-full rounded border-line"
-          >
-            <option value="">All recipients</option>
-            {segments.map((segment) => (
-              <option key={segment.id} value={segment.id}>
-                {segment.name} ({segment.segmentType})
-              </option>
-            ))}
-          </select>
         </label>
         <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">
           Create campaign

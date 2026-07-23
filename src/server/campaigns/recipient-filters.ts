@@ -10,6 +10,7 @@ import {
 
 export type CampaignRecipientFilters = {
   segmentId: string | null;
+  manualRecipientIds: string[];
   tagSlugs: string[];
   locale: string | null;
   platform: string | null;
@@ -19,6 +20,7 @@ export type CampaignRecipientFilters = {
 
 const defaultFilters: CampaignRecipientFilters = {
   segmentId: null,
+  manualRecipientIds: [],
   tagSlugs: [],
   locale: null,
   platform: null,
@@ -45,6 +47,12 @@ export function parseCampaignRecipientFilters(
       : {};
   return {
     segmentId: cleanString(raw.segmentId),
+    manualRecipientIds: Array.isArray(raw.manualRecipientIds)
+      ? raw.manualRecipientIds.filter(
+          (value): value is string =>
+            typeof value === "string" && Boolean(value),
+        )
+      : [],
     tagSlugs: Array.isArray(raw.tagSlugs)
       ? raw.tagSlugs.filter(
           (value): value is string =>
@@ -60,6 +68,7 @@ export function parseCampaignRecipientFilters(
 
 export function buildCampaignRecipientFilters(input: {
   segmentId?: unknown;
+  manualRecipientIds?: unknown[];
   tagSlugs?: unknown[];
   locale?: unknown;
   platform?: unknown;
@@ -68,6 +77,10 @@ export function buildCampaignRecipientFilters(input: {
 }): CampaignRecipientFilters {
   return {
     segmentId: cleanString(input.segmentId),
+    manualRecipientIds:
+      input.manualRecipientIds
+        ?.filter((value): value is string => typeof value === "string")
+        .filter(Boolean) ?? [],
     tagSlugs:
       input.tagSlugs
         ?.filter((value): value is string => typeof value === "string")
@@ -92,6 +105,18 @@ export async function loadFilteredRecipients(
     });
     if (!segment) return [];
     return loadSegmentRecipients(workspaceId, segment);
+  }
+  if (filters.manualRecipientIds.length > 0) {
+    return db.query.recipients.findMany({
+      where: and(
+        eq(recipients.workspaceId, workspaceId),
+        inArray(recipients.id, filters.manualRecipientIds),
+      ),
+      orderBy: (table, { asc, desc }) => [
+        desc(table.priorityScore),
+        asc(table.id),
+      ],
+    });
   }
   return loadRuleRecipients(workspaceId, filters);
 }
@@ -130,6 +155,7 @@ export async function loadSegmentRecipients(
     workspaceId,
     {
       segmentId: null,
+      manualRecipientIds: [],
       tagSlugs: rules.tagSlugs,
       locale: null,
       platform: null,
@@ -221,6 +247,11 @@ export function describeCampaignRecipientFilters(
   const descriptions: string[] = [];
   if (filters.tagSlugs.length > 0) {
     descriptions.push(`Tags: ${filters.tagSlugs.join(", ")}`);
+  }
+  if (filters.manualRecipientIds.length > 0) {
+    descriptions.push(
+      `Manual recipients: ${filters.manualRecipientIds.length}`,
+    );
   }
   if (filters.locale) descriptions.push(`Locale: ${filters.locale}`);
   if (filters.platform) descriptions.push(`Platform: ${filters.platform}`);

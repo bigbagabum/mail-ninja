@@ -1,7 +1,12 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
-import { campaignRecipients, campaigns, recipients } from "@/db/schema";
+import {
+  audienceSegments,
+  campaignRecipients,
+  campaigns,
+  recipients,
+} from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import {
@@ -17,6 +22,7 @@ import {
   loadFilteredRecipients,
   parseCampaignRecipientFilters,
 } from "@/server/campaigns/recipient-filters";
+import { updateCampaignAudienceAction } from "../../actions";
 
 export default async function CampaignRecipientsPage({
   params,
@@ -39,20 +45,34 @@ export default async function CampaignRecipientsPage({
     .where(eq(campaignRecipients.campaignId, id))
     .limit(200);
   const filters = parseCampaignRecipientFilters(campaign.metadata);
+  const [segments, allRecipients] = await Promise.all([
+    db.query.audienceSegments.findMany({
+      where: eq(audienceSegments.workspaceId, admin.workspaceId),
+      orderBy: (table, { asc }) => [asc(table.name)],
+    }),
+    db.query.recipients.findMany({
+      where: eq(recipients.workspaceId, admin.workspaceId),
+      limit: 200,
+      orderBy: (table, { desc }) => [desc(table.createdAt)],
+    }),
+  ]);
   const selectedRecipients = await loadFilteredRecipients(
     admin.workspaceId,
     filters,
   );
   const filterDescriptions = describeCampaignRecipientFilters(filters);
+  const audienceMode = filters.segmentId
+    ? "segment"
+    : filters.manualRecipientIds.length > 0
+      ? "manual"
+      : "all";
   return (
     <>
       <PageHeader
         title="Campaign Recipients"
         action={
           <>
-            <ButtonLink href={`/campaigns/${id}/edit`}>
-              Edit audience filters
-            </ButtonLink>
+            <ButtonLink href="/segments">Manage segments</ButtonLink>
             <ButtonLink href="/recipients">Add recipient</ButtonLink>
             <ButtonLink href="/imports/new">Import recipients</ButtonLink>
           </>
@@ -60,11 +80,99 @@ export default async function CampaignRecipientsPage({
       />
       <CampaignTabs id={id} />
       <InfoNote>
-        Recipients are added to a campaign by selecting an audience, then
-        preparing the campaign. The selected audience is copied into durable
-        campaign recipients so later imports or edits do not silently change who
-        receives this campaign.
+        Choose who receives this campaign here. Use all recipients, one saved
+        segment, or a manual selection. Suppressions are excluded during
+        preparation.
       </InfoNote>
+      <form
+        action={updateCampaignAudienceAction}
+        className="mt-6 rounded border border-line bg-white p-5"
+      >
+        <input type="hidden" name="campaignId" value={id} />
+        <h2 className="font-semibold">Audience selection</h2>
+        <fieldset className="mt-4 grid gap-3 md:grid-cols-3">
+          <label className="rounded border border-line p-3 text-sm">
+            <input
+              className="mr-2"
+              name="audienceMode"
+              type="radio"
+              value="all"
+              defaultChecked={audienceMode === "all"}
+            />
+            All recipients
+          </label>
+          <label className="rounded border border-line p-3 text-sm">
+            <input
+              className="mr-2"
+              name="audienceMode"
+              type="radio"
+              value="segment"
+              defaultChecked={audienceMode === "segment"}
+            />
+            Saved segment
+          </label>
+          <label className="rounded border border-line p-3 text-sm">
+            <input
+              className="mr-2"
+              name="audienceMode"
+              type="radio"
+              value="manual"
+              defaultChecked={audienceMode === "manual"}
+            />
+            Manual selection
+          </label>
+        </fieldset>
+        <label className="mt-4 block text-sm font-medium">
+          Segment
+          <select
+            name="segmentId"
+            defaultValue={filters.segmentId ?? ""}
+            className="mt-1 w-full rounded border-line"
+          >
+            <option value="">Choose segment</option>
+            {segments.map((segment) => (
+              <option key={segment.id} value={segment.id}>
+                {segment.name} ({segment.segmentType})
+              </option>
+            ))}
+          </select>
+        </label>
+        <div className="mt-4 rounded border border-line">
+          <div className="border-b border-line bg-panel px-3 py-2 text-sm font-medium">
+            Manual recipients
+          </div>
+          <div className="max-h-80 overflow-auto">
+            {allRecipients.map((recipient) => (
+              <label
+                key={recipient.id}
+                className="flex items-center gap-3 border-t border-line px-3 py-2 text-sm first:border-t-0"
+              >
+                <input
+                  name="manualRecipientIds"
+                  type="checkbox"
+                  value={recipient.id}
+                  defaultChecked={filters.manualRecipientIds.includes(
+                    recipient.id,
+                  )}
+                  className="rounded border-line"
+                />
+                <span className="font-medium">{recipient.email}</span>
+                <span className="text-muted">
+                  {[recipient.firstName, recipient.lastName]
+                    .filter(Boolean)
+                    .join(" ")}
+                </span>
+              </label>
+            ))}
+            {allRecipients.length === 0 ? (
+              <p className="p-3 text-sm text-muted">No recipients yet.</p>
+            ) : null}
+          </div>
+        </div>
+        <button className="mt-4 rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+          Save audience
+        </button>
+      </form>
       <section className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded border border-line bg-white p-4">
           <div className="text-sm text-muted">Selected audience</div>
