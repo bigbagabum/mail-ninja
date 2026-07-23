@@ -66,9 +66,14 @@ export default async function ProviderAccountsPage() {
   const webhookLooksPublic =
     !webhookEndpoint.includes("localhost") &&
     !webhookEndpoint.includes("127.0.0.1");
-  const fieldClass = "grid gap-1 text-sm";
+  const fieldClass = "grid min-w-0 gap-1.5 text-sm";
   const labelClass = "text-xs font-medium text-muted";
-  const inputClass = "rounded border-line text-sm";
+  const inputClass =
+    "h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-accent focus:shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)] focus:ring-0";
+  const secondaryButtonClass =
+    "h-10 rounded border border-line bg-white px-3 text-sm font-medium text-ink shadow-sm transition hover:bg-panel focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]";
+  const dangerButtonClass =
+    "h-10 rounded border border-red-200 bg-white px-3 text-sm font-medium text-danger shadow-sm transition hover:bg-red-50 focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(185,28,28,0.35)]";
 
   return (
     <>
@@ -182,7 +187,7 @@ export default async function ProviderAccountsPage() {
         <form
           action={createProviderAccountAction}
           autoComplete="off"
-          className="mt-4 grid gap-3 lg:grid-cols-[120px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_110px_120px_130px_auto]"
+          className="mt-5 grid gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4"
         >
           <label className={fieldClass}>
             <span className={labelClass}>Provider</span>
@@ -235,12 +240,7 @@ export default async function ProviderAccountsPage() {
             />
           </label>
           <label className={fieldClass}>
-            <span className={labelClass}>
-              Priority{" "}
-              <span title="Lower number sends first." className="cursor-help">
-                (?)
-              </span>
-            </span>
+            <span className={labelClass}>Priority</span>
             <input
               name="routingOrder"
               type="number"
@@ -249,6 +249,9 @@ export default async function ProviderAccountsPage() {
               autoComplete="off"
               className={inputClass}
             />
+            <span className="text-xs text-muted">
+              Lower number sends first.
+            </span>
           </label>
           <label className={fieldClass}>
             <span className={labelClass}>Daily limit</span>
@@ -272,8 +275,13 @@ export default async function ProviderAccountsPage() {
               className={inputClass}
             />
           </label>
-          <div className="flex items-end">
-            <SubmitButton pendingLabel="Saving key...">Save key</SubmitButton>
+          <div className="flex items-end md:col-span-2 xl:col-span-1">
+            <SubmitButton
+              pendingLabel="Saving key..."
+              className="h-11 w-full rounded-md bg-accent px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]"
+            >
+              Save key
+            </SubmitButton>
           </div>
         </form>
       </section>
@@ -313,7 +321,7 @@ export default async function ProviderAccountsPage() {
                     />
                     <SubmitButton
                       pendingLabel="Testing..."
-                      className="rounded border border-line px-3 py-2 text-sm hover:bg-panel"
+                      className={secondaryButtonClass}
                     >
                       Re-test
                     </SubmitButton>
@@ -331,7 +339,7 @@ export default async function ProviderAccountsPage() {
                     />
                     <SubmitButton
                       pendingLabel="Updating..."
-                      className="rounded border border-line px-3 py-2 text-sm hover:bg-panel"
+                      className={secondaryButtonClass}
                     >
                       {account.status === "active" ? "Pause" : "Activate"}
                     </SubmitButton>
@@ -344,7 +352,7 @@ export default async function ProviderAccountsPage() {
                     />
                     <SubmitButton
                       pendingLabel="Deleting..."
-                      className="rounded border border-red-200 px-3 py-2 text-sm text-danger hover:bg-red-50"
+                      className={dangerButtonClass}
                     >
                       Delete
                     </SubmitButton>
@@ -396,7 +404,7 @@ export default async function ProviderAccountsPage() {
               <form
                 action={updateProviderAccountAction}
                 autoComplete="off"
-                className="mt-4 grid gap-3 lg:grid-cols-[minmax(160px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_100px_120px_130px_auto]"
+                className="mt-4 grid gap-x-5 gap-y-4 md:grid-cols-2 xl:grid-cols-4"
               >
                 <input
                   type="hidden"
@@ -441,15 +449,7 @@ export default async function ProviderAccountsPage() {
                   />
                 </label>
                 <label className={fieldClass}>
-                  <span className={labelClass}>
-                    Priority{" "}
-                    <span
-                      title="Lower number sends first."
-                      className="cursor-help"
-                    >
-                      (?)
-                    </span>
-                  </span>
+                  <span className={labelClass}>Priority</span>
                   <input
                     name="routingOrder"
                     type="number"
@@ -458,6 +458,9 @@ export default async function ProviderAccountsPage() {
                     autoComplete="off"
                     className={inputClass}
                   />
+                  <span className="text-xs text-muted">
+                    Lower number sends first.
+                  </span>
                 </label>
                 <label className={fieldClass}>
                   <span className={labelClass}>Daily limit</span>
@@ -481,8 +484,11 @@ export default async function ProviderAccountsPage() {
                     className={inputClass}
                   />
                 </label>
-                <div className="flex items-end">
-                  <SubmitButton pendingLabel="Saving...">
+                <div className="flex items-end md:col-span-2 xl:col-span-1">
+                  <SubmitButton
+                    pendingLabel="Saving..."
+                    className="h-11 w-full rounded-md bg-accent px-4 text-sm font-medium text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]"
+                  >
                     Save changes
                   </SubmitButton>
                 </div>
