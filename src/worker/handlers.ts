@@ -126,6 +126,7 @@ async function sendProviderBroadcastWave(waveId: string) {
         updatedAt: new Date(),
       })
       .where(eq(campaignWaves.id, waveId));
+    await completeCampaignIfFullySent(campaign.id);
     return { sent: 0 };
   }
 
@@ -186,7 +187,27 @@ async function sendProviderBroadcastWave(waveId: string) {
       updatedAt: new Date(),
     })
     .where(eq(campaignWaves.id, waveId));
+  await completeCampaignIfFullySent(campaign.id);
   return { sent };
+}
+
+async function completeCampaignIfFullySent(campaignId: string) {
+  const remaining = await db.query.campaignRecipients.findFirst({
+    where: and(
+      eq(campaignRecipients.campaignId, campaignId),
+      sql`${campaignRecipients.sentAt} is null`,
+      sql`${campaignRecipients.status} in ('prepared', 'synced', 'scheduled')`,
+    ),
+  });
+  if (remaining) return;
+  await db
+    .update(campaigns)
+    .set({
+      status: "completed",
+      completedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(campaigns.id, campaignId));
 }
 
 export async function handleJob(

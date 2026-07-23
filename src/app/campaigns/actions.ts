@@ -18,6 +18,7 @@ import { enqueueJob } from "@/server/jobs/queue";
 import { prepareCampaign } from "@/server/campaigns/prepare";
 import { buildCampaignRecipientFilters } from "@/server/campaigns/recipient-filters";
 import { createProviderForWorkspace } from "@/server/provider/resend";
+import { handleJob } from "@/worker/handlers";
 import { hasUnsubscribeLink, renderTemplate } from "@/lib/templates";
 import { normalizeEmail } from "@/lib/normalization";
 
@@ -332,13 +333,15 @@ export async function launchCampaignAction(formData: FormData) {
           scheduledAt: runAfter.toISOString(),
         },
       });
-      await tx.insert(jobs).values({
-        workspaceId: admin.workspaceId,
-        type: "send_provider_broadcast",
-        payload: { campaignId: data.campaignId, waveId: wave.id },
-        priority: 10,
-        runAfter,
-      });
+      if (data.sendMode === "scheduled") {
+        await tx.insert(jobs).values({
+          workspaceId: admin.workspaceId,
+          type: "send_provider_broadcast",
+          payload: { campaignId: data.campaignId, waveId: wave.id },
+          priority: 10,
+          runAfter,
+        });
+      }
     }
     await tx.insert(auditLogs).values({
       workspaceId: admin.workspaceId,
@@ -353,6 +356,15 @@ export async function launchCampaignAction(formData: FormData) {
       },
     });
   });
+  if (data.sendMode === "now") {
+    for (const wave of waves) {
+      await handleJob("send_provider_broadcast", {
+        campaignId: data.campaignId,
+        waveId: wave.id,
+      });
+    }
+    redirect(`/campaigns/${data.campaignId}/recipients`);
+  }
   redirect(`/jobs`);
 }
 
