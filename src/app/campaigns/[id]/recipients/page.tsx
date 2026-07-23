@@ -8,6 +8,7 @@ import {
   recipients,
 } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
+import { CampaignAudienceForm } from "@/components/campaign-audience-form";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import {
   PageHeader,
@@ -22,7 +23,6 @@ import {
   loadFilteredRecipients,
   parseCampaignRecipientFilters,
 } from "@/server/campaigns/recipient-filters";
-import { updateCampaignAudienceAction } from "../../actions";
 
 export default async function CampaignRecipientsPage({
   params,
@@ -75,10 +75,6 @@ export default async function CampaignRecipientsPage({
       : audienceMode === "manual"
         ? `Manual selection: ${filters.manualRecipientIds.length} recipients`
         : "All recipients";
-  const modeClass = (mode: typeof audienceMode) =>
-    audienceMode === mode
-      ? "border-emerald-300 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200"
-      : "border-line bg-white";
   return (
     <>
       <PageHeader
@@ -97,119 +93,26 @@ export default async function CampaignRecipientsPage({
         segment, or a manual selection. Suppressions are excluded during
         preparation.
       </InfoNote>
-      <form
-        action={updateCampaignAudienceAction}
-        className="mt-6 rounded border border-line bg-white p-5"
-      >
-        <input type="hidden" name="campaignId" value={id} />
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="font-semibold">Audience selection</h2>
-            <p className="mt-1 text-sm text-muted">
-              Current: {audienceSummary}
-            </p>
-          </div>
-          <Badge tone={selectedRecipients.length > 0 ? "good" : "warn"}>
-            {selectedRecipients.length} selected
-          </Badge>
-        </div>
-        <fieldset className="mt-4 grid gap-3 md:grid-cols-3">
-          <label className={`rounded border p-3 text-sm ${modeClass("all")}`}>
-            <input
-              className="mr-2"
-              name="audienceMode"
-              type="radio"
-              value="all"
-              defaultChecked={audienceMode === "all"}
-            />
-            All recipients
-            {audienceMode === "all" ? (
-              <Badge tone="good">selected</Badge>
-            ) : null}
-          </label>
-          <label
-            className={`rounded border p-3 text-sm ${modeClass("segment")}`}
-          >
-            <input
-              className="mr-2"
-              name="audienceMode"
-              type="radio"
-              value="segment"
-              defaultChecked={audienceMode === "segment"}
-            />
-            Saved segment
-            {audienceMode === "segment" ? (
-              <Badge tone="good">selected</Badge>
-            ) : null}
-          </label>
-          <label
-            className={`rounded border p-3 text-sm ${modeClass("manual")}`}
-          >
-            <input
-              className="mr-2"
-              name="audienceMode"
-              type="radio"
-              value="manual"
-              defaultChecked={audienceMode === "manual"}
-            />
-            Manual selection
-            {audienceMode === "manual" ? (
-              <Badge tone="good">selected</Badge>
-            ) : null}
-          </label>
-        </fieldset>
-        <label className="mt-4 block text-sm font-medium">
-          Segment
-          <select
-            name="segmentId"
-            defaultValue={filters.segmentId ?? ""}
-            className="mt-1 w-full rounded border-line"
-          >
-            <option value="">Choose segment</option>
-            {segments.map((segment) => (
-              <option key={segment.id} value={segment.id}>
-                {segment.name} ({segment.segmentType})
-                {segment.id === filters.segmentId ? " - selected" : ""}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="mt-4 rounded border border-line">
-          <div className="border-b border-line bg-panel px-3 py-2 text-sm font-medium">
-            Manual recipients
-          </div>
-          <div className="max-h-80 overflow-auto">
-            {allRecipients.map((recipient) => (
-              <label
-                key={recipient.id}
-                className="flex items-center gap-3 border-t border-line px-3 py-2 text-sm first:border-t-0"
-              >
-                <input
-                  name="manualRecipientIds"
-                  type="checkbox"
-                  value={recipient.id}
-                  defaultChecked={filters.manualRecipientIds.includes(
-                    recipient.id,
-                  )}
-                  className="rounded border-line"
-                />
-                <span className="font-medium">{recipient.email}</span>
-                <span className="text-muted">
-                  {[recipient.firstName, recipient.lastName]
-                    .filter(Boolean)
-                    .join(" ")}
-                </span>
-              </label>
-            ))}
-            {allRecipients.length === 0 ? (
-              <p className="p-3 text-sm text-muted">No recipients yet.</p>
-            ) : null}
-          </div>
-        </div>
-        <button className="mt-4 rounded bg-accent px-3 py-2 text-sm font-medium text-white">
-          Save audience
-        </button>
-      </form>
+      <CampaignAudienceForm
+        campaignId={id}
+        initialMode={audienceMode}
+        initialSegmentId={filters.segmentId ?? ""}
+        initialManualRecipientIds={filters.manualRecipientIds}
+        segments={segments.map((segment) => ({
+          id: segment.id,
+          name: segment.name,
+          segmentType: segment.segmentType,
+        }))}
+        recipients={allRecipients.map((recipient) => ({
+          id: recipient.id,
+          email: recipient.email,
+          name: [recipient.firstName, recipient.lastName]
+            .filter(Boolean)
+            .join(" "),
+        }))}
+        selectedCount={selectedRecipients.length}
+        summary={audienceSummary}
+      />
       <section className="mt-6 grid gap-4 md:grid-cols-3">
         <div className="rounded border border-line bg-white p-4">
           <div className="text-sm text-muted">Selected audience</div>
