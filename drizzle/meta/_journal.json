@@ -64,6 +64,13 @@
       "when": 1784803200000,
       "tag": "0008_audience_segments",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784889600000,
+      "tag": "0009_provider_send_limits",
+      "breakpoints": true
     }
   ]
 }

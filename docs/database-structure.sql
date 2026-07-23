@@ -586,3 +586,12 @@ CREATE INDEX "audience_segments_workspace_idx" ON "audience_segments" USING btre
 CREATE INDEX "audience_segment_members_workspace_idx" ON "audience_segment_members" USING btree ("workspace_id","segment_id");--> statement-breakpoint
 CREATE INDEX "audience_segment_members_recipient_idx" ON "audience_segment_members" USING btree ("recipient_id");
 
+-- ============================================================
+-- Migration: 0009_provider_send_limits.sql
+-- ============================================================
+ALTER TABLE "provider_accounts" ADD COLUMN "daily_send_limit" integer DEFAULT 100 NOT NULL;--> statement-breakpoint
+ALTER TABLE "provider_accounts" ADD COLUMN "monthly_send_limit" integer DEFAULT 3000 NOT NULL;--> statement-breakpoint
+ALTER TABLE "campaign_recipients" ADD COLUMN "provider_account_id" uuid;--> statement-breakpoint
+ALTER TABLE "campaign_recipients" ADD CONSTRAINT "campaign_recipients_provider_account_id_provider_accounts_id_fk" FOREIGN KEY ("provider_account_id") REFERENCES "public"."provider_accounts"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "campaign_recipients_provider_account_idx" ON "campaign_recipients" USING btree ("provider_account_id");
+

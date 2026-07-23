@@ -1,7 +1,12 @@
 import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
-import { emailEvents, providerAccounts, workspaceSettings } from "@/db/schema";
+import {
+  campaignRecipients,
+  emailEvents,
+  providerAccounts,
+  workspaceSettings,
+} from "@/db/schema";
 import { CopyButton } from "@/components/copy-button";
 import { Badge, PageHeader } from "@/components/ui";
 import { SubmitButton } from "@/components/submit-button";
@@ -29,6 +34,18 @@ export default async function ProviderAccountsPage() {
       asc(table.name),
     ],
   });
+  const usageRows = await db
+    .select({
+      providerAccountId: campaignRecipients.providerAccountId,
+      today: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('day', now()))::int`,
+      month: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('month', now()))::int`,
+    })
+    .from(campaignRecipients)
+    .where(sql`${campaignRecipients.providerAccountId} is not null`)
+    .groupBy(campaignRecipients.providerAccountId);
+  const usageByAccount = new Map(
+    usageRows.map((row) => [row.providerAccountId, row]),
+  );
   const [webhookStats] = await db
     .select({
       total: sql<number>`count(*)::int`,
@@ -157,7 +174,7 @@ export default async function ProviderAccountsPage() {
         <form
           action={createProviderAccountAction}
           autoComplete="off"
-          className="mt-4 grid gap-3 lg:grid-cols-[140px_1fr_1fr_1fr_120px_auto]"
+          className="mt-4 grid gap-3 lg:grid-cols-[120px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_110px_120px_130px_auto]"
         >
           <select
             name="provider"
@@ -205,6 +222,24 @@ export default async function ProviderAccountsPage() {
             autoComplete="off"
             className="rounded border-line text-sm"
           />
+          <input
+            name="dailySendLimit"
+            type="number"
+            min="1"
+            required
+            defaultValue="100"
+            placeholder="Daily limit"
+            className="rounded border-line text-sm"
+          />
+          <input
+            name="monthlySendLimit"
+            type="number"
+            min="1"
+            required
+            defaultValue="3000"
+            placeholder="Monthly limit"
+            className="rounded border-line text-sm"
+          />
           <SubmitButton pendingLabel="Saving key...">Save key</SubmitButton>
         </form>
       </section>
@@ -219,81 +254,94 @@ export default async function ProviderAccountsPage() {
               <th>Status</th>
               <th>Last check</th>
               <th>Order</th>
-              <th>Usage</th>
+              <th>Today</th>
+              <th>Month</th>
+              <th>Total usage</th>
               <th>Last used</th>
               <th>Last error</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {accounts.map((account) => (
-              <tr key={account.id} className="border-t border-line">
-                <td className="p-3">{account.provider}</td>
-                <td className="font-medium">{account.name}</td>
-                <td>{account.apiKeyHint}</td>
-                <td>
-                  {account.status === "active" ? (
-                    <Badge tone="good">active</Badge>
-                  ) : account.status === "failed" ? (
-                    <Badge tone="bad">failed</Badge>
-                  ) : (
-                    <Badge tone="warn">paused</Badge>
-                  )}
-                </td>
-                <td>
-                  {account.lastCheckedAt
-                    ? account.lastCheckedAt.toLocaleString()
-                    : "never"}
-                </td>
-                <td>{account.routingOrder}</td>
-                <td>{account.usageCount}</td>
-                <td>{account.lastUsedAt?.toISOString() ?? "never"}</td>
-                <td className="max-w-xs truncate text-danger">
-                  {account.lastError}
-                </td>
-                <td className="p-3">
-                  <div className="flex flex-wrap gap-2">
-                    <form action={testProviderAccountAction}>
-                      <input
-                        type="hidden"
-                        name="providerAccountId"
-                        value={account.id}
-                      />
-                      <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
-                        Re-test
-                      </button>
-                    </form>
-                    <form action={setProviderAccountStatusAction}>
-                      <input
-                        type="hidden"
-                        name="providerAccountId"
-                        value={account.id}
-                      />
-                      <input
-                        type="hidden"
-                        name="status"
-                        value={
-                          account.status === "active" ? "paused" : "active"
-                        }
-                      />
-                      <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
-                        {account.status === "active" ? "Pause" : "Activate"}
-                      </button>
-                    </form>
-                    <form action={deleteProviderAccountAction}>
-                      <input
-                        type="hidden"
-                        name="providerAccountId"
-                        value={account.id}
-                      />
-                      <button className="rounded border border-red-200 px-2 py-1 text-sm text-danger hover:bg-red-50">
-                        Delete
-                      </button>
-                    </form>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {accounts.map((account) => {
+              const usage = usageByAccount.get(account.id);
+              const today = usage?.today ?? 0;
+              const month = usage?.month ?? 0;
+              return (
+                <tr key={account.id} className="border-t border-line">
+                  <td className="p-3">{account.provider}</td>
+                  <td className="font-medium">{account.name}</td>
+                  <td>{account.apiKeyHint}</td>
+                  <td>
+                    {account.status === "active" ? (
+                      <Badge tone="good">active</Badge>
+                    ) : account.status === "failed" ? (
+                      <Badge tone="bad">failed</Badge>
+                    ) : (
+                      <Badge tone="warn">paused</Badge>
+                    )}
+                  </td>
+                  <td>
+                    {account.lastCheckedAt
+                      ? account.lastCheckedAt.toLocaleString()
+                      : "never"}
+                  </td>
+                  <td>{account.routingOrder}</td>
+                  <td>
+                    {today} / {account.dailySendLimit}
+                  </td>
+                  <td>
+                    {month} / {account.monthlySendLimit}
+                  </td>
+                  <td>{account.usageCount}</td>
+                  <td>{account.lastUsedAt?.toISOString() ?? "never"}</td>
+                  <td className="max-w-xs truncate text-danger">
+                    {account.lastError}
+                  </td>
+                  <td className="p-3">
+                    <div className="flex flex-wrap gap-2">
+                      <form action={testProviderAccountAction}>
+                        <input
+                          type="hidden"
+                          name="providerAccountId"
+                          value={account.id}
+                        />
+                        <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
+                          Re-test
+                        </button>
+                      </form>
+                      <form action={setProviderAccountStatusAction}>
+                        <input
+                          type="hidden"
+                          name="providerAccountId"
+                          value={account.id}
+                        />
+                        <input
+                          type="hidden"
+                          name="status"
+                          value={
+                            account.status === "active" ? "paused" : "active"
+                          }
+                        />
+                        <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
+                          {account.status === "active" ? "Pause" : "Activate"}
+                        </button>
+                      </form>
+                      <form action={deleteProviderAccountAction}>
+                        <input
+                          type="hidden"
+                          name="providerAccountId"
+                          value={account.id}
+                        />
+                        <button className="rounded border border-red-200 px-2 py-1 text-sm text-danger hover:bg-red-50">
+                          Delete
+                        </button>
+                      </form>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
             {accounts.length === 0 ? (
               <tr>
                 <td colSpan={10} className="p-3 text-muted">

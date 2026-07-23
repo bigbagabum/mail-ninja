@@ -14,19 +14,27 @@ const createProviderAccountSchema = z.object({
   name: z.string().min(1),
   apiKey: z.string().min(8),
   webhookSecret: z.string().optional(),
-  routingOrder: z.coerce.number().int().min(0).default(100)
+  routingOrder: z.coerce.number().int().min(0).default(100),
+  dailySendLimit: z.coerce.number().int().positive(),
+  monthlySendLimit: z.coerce.number().int().positive(),
 });
 
 function providerErrorMessage(error: unknown) {
-  if (error instanceof Error && error.message) return error.message.slice(0, 500);
+  if (error instanceof Error && error.message)
+    return error.message.slice(0, 500);
   if (typeof error === "string") return error.slice(0, 500);
   return "Provider check failed.";
 }
 
-async function validateProviderKey(provider: "resend" | "custom", apiKey: string) {
+async function validateProviderKey(
+  provider: "resend" | "custom",
+  apiKey: string,
+) {
   try {
     if (provider !== "resend") {
-      throw new Error("Automatic key validation is only implemented for Resend accounts.");
+      throw new Error(
+        "Automatic key validation is only implemented for Resend accounts.",
+      );
     }
 
     const resend = new Resend(apiKey);
@@ -54,25 +62,37 @@ export async function createProviderAccountAction(formData: FormData) {
       name: data.name,
       apiKeyEncrypted: encryptSecret(data.apiKey),
       apiKeyHint: secretHint(data.apiKey),
-      webhookSecretEncrypted: data.webhookSecret ? encryptSecret(data.webhookSecret) : null,
+      webhookSecretEncrypted: data.webhookSecret
+        ? encryptSecret(data.webhookSecret)
+        : null,
       status: validation.ok ? "active" : "failed",
       routingOrder: data.routingOrder,
+      dailySendLimit: data.dailySendLimit,
+      monthlySendLimit: data.monthlySendLimit,
       lastCheckedAt: checkedAt,
       lastError: validation.error,
-      createdBy: admin.id
+      createdBy: admin.id,
     })
     .onConflictDoUpdate({
-      target: [providerAccounts.workspaceId, providerAccounts.provider, providerAccounts.name],
+      target: [
+        providerAccounts.workspaceId,
+        providerAccounts.provider,
+        providerAccounts.name,
+      ],
       set: {
         apiKeyEncrypted: encryptSecret(data.apiKey),
         apiKeyHint: secretHint(data.apiKey),
-        webhookSecretEncrypted: data.webhookSecret ? encryptSecret(data.webhookSecret) : null,
+        webhookSecretEncrypted: data.webhookSecret
+          ? encryptSecret(data.webhookSecret)
+          : null,
         routingOrder: data.routingOrder,
+        dailySendLimit: data.dailySendLimit,
+        monthlySendLimit: data.monthlySendLimit,
         status: validation.ok ? "active" : "failed",
         lastCheckedAt: checkedAt,
         lastError: validation.error,
-        updatedAt: checkedAt
-      }
+        updatedAt: checkedAt,
+      },
     })
     .returning();
 
@@ -82,7 +102,11 @@ export async function createProviderAccountAction(formData: FormData) {
     action: "provider_account_upsert",
     entityType: "provider_account",
     entityId: account.id,
-    metadata: { provider: data.provider, name: data.name, validation: validation.ok ? "success" : "failed" }
+    metadata: {
+      provider: data.provider,
+      name: data.name,
+      validation: validation.ok ? "success" : "failed",
+    },
   });
   revalidatePath("/settings/providers");
   revalidatePath("/settings");
@@ -90,26 +114,35 @@ export async function createProviderAccountAction(formData: FormData) {
 
 const statusSchema = z.object({
   providerAccountId: z.string().uuid(),
-  status: z.enum(["active", "paused"])
+  status: z.enum(["active", "paused"]),
 });
 
 export async function setProviderAccountStatusAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = statusSchema.parse(Object.fromEntries(formData));
   const target = await db.query.providerAccounts.findFirst({
-    where: and(eq(providerAccounts.id, data.providerAccountId), eq(providerAccounts.workspaceId, admin.workspaceId))
+    where: and(
+      eq(providerAccounts.id, data.providerAccountId),
+      eq(providerAccounts.workspaceId, admin.workspaceId),
+    ),
   });
   if (!target) throw new Error("Provider account not found.");
 
   await db.transaction(async (tx) => {
-    await tx.update(providerAccounts).set({ status: data.status, updatedAt: new Date() }).where(eq(providerAccounts.id, target.id));
+    await tx
+      .update(providerAccounts)
+      .set({ status: data.status, updatedAt: new Date() })
+      .where(eq(providerAccounts.id, target.id));
     await tx.insert(auditLogs).values({
       workspaceId: admin.workspaceId,
       adminUserId: admin.id,
-      action: data.status === "active" ? "provider_account_activated" : "provider_account_paused",
+      action:
+        data.status === "active"
+          ? "provider_account_activated"
+          : "provider_account_paused",
       entityType: "provider_account",
       entityId: target.id,
-      metadata: { provider: target.provider, name: target.name }
+      metadata: { provider: target.provider, name: target.name },
     });
   });
   revalidatePath("/settings/providers");
@@ -124,12 +157,18 @@ export async function testProviderAccountAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = testSchema.parse(Object.fromEntries(formData));
   const target = await db.query.providerAccounts.findFirst({
-    where: and(eq(providerAccounts.id, data.providerAccountId), eq(providerAccounts.workspaceId, admin.workspaceId))
+    where: and(
+      eq(providerAccounts.id, data.providerAccountId),
+      eq(providerAccounts.workspaceId, admin.workspaceId),
+    ),
   });
   if (!target) throw new Error("Provider account not found.");
 
   const checkedAt = new Date();
-  const validation = await validateProviderKey(target.provider as "resend" | "custom", decryptSecret(target.apiKeyEncrypted));
+  const validation = await validateProviderKey(
+    target.provider as "resend" | "custom",
+    decryptSecret(target.apiKeyEncrypted),
+  );
   if (validation.ok) {
     await db.transaction(async (tx) => {
       await tx
@@ -138,7 +177,7 @@ export async function testProviderAccountAction(formData: FormData) {
           status: target.status === "failed" ? "active" : target.status,
           lastCheckedAt: checkedAt,
           lastError: null,
-          updatedAt: checkedAt
+          updatedAt: checkedAt,
         })
         .where(eq(providerAccounts.id, target.id));
       await tx.insert(auditLogs).values({
@@ -147,14 +186,19 @@ export async function testProviderAccountAction(formData: FormData) {
         action: "provider_account_test_success",
         entityType: "provider_account",
         entityId: target.id,
-        metadata: { provider: target.provider, name: target.name }
+        metadata: { provider: target.provider, name: target.name },
       });
     });
   } else {
     await db.transaction(async (tx) => {
       await tx
         .update(providerAccounts)
-        .set({ status: "failed", lastCheckedAt: checkedAt, lastError: validation.error, updatedAt: checkedAt })
+        .set({
+          status: "failed",
+          lastCheckedAt: checkedAt,
+          lastError: validation.error,
+          updatedAt: checkedAt,
+        })
         .where(eq(providerAccounts.id, target.id));
       await tx.insert(auditLogs).values({
         workspaceId: admin.workspaceId,
@@ -162,7 +206,11 @@ export async function testProviderAccountAction(formData: FormData) {
         action: "provider_account_test_failed",
         entityType: "provider_account",
         entityId: target.id,
-        metadata: { provider: target.provider, name: target.name, error: validation.error }
+        metadata: {
+          provider: target.provider,
+          name: target.name,
+          error: validation.error,
+        },
       });
     });
   }
@@ -175,7 +223,10 @@ export async function deleteProviderAccountAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = deleteSchema.parse(Object.fromEntries(formData));
   const target = await db.query.providerAccounts.findFirst({
-    where: and(eq(providerAccounts.id, data.providerAccountId), eq(providerAccounts.workspaceId, admin.workspaceId))
+    where: and(
+      eq(providerAccounts.id, data.providerAccountId),
+      eq(providerAccounts.workspaceId, admin.workspaceId),
+    ),
   });
   if (!target) throw new Error("Provider account not found.");
   await db.transaction(async (tx) => {
@@ -186,7 +237,7 @@ export async function deleteProviderAccountAction(formData: FormData) {
       action: "provider_account_deleted",
       entityType: "provider_account",
       entityId: target.id,
-      metadata: { provider: target.provider, name: target.name }
+      metadata: { provider: target.provider, name: target.name },
     });
   });
   revalidatePath("/settings/providers");

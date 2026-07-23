@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
 import {
   campaignAnalytics,
@@ -6,13 +6,16 @@ import {
   campaigns,
   campaignVariants,
   campaignWaves,
+  providerAccounts,
   recipients,
   workspaceSettings,
 } from "@/db/schema";
 import { logger } from "@/lib/logger";
+import { decryptSecret } from "@/lib/secret-box";
 import { renderTemplate } from "@/lib/templates";
 import { prepareCampaign } from "@/server/campaigns/prepare";
-import { createProviderForWorkspace } from "@/server/provider/resend";
+import { enqueueJob } from "@/server/jobs/queue";
+import { ResendEmailCampaignProvider } from "@/server/provider/resend";
 import { processEmailEvent } from "@/server/webhooks/events";
 
 export async function recalculateCampaignAnalytics(campaignId: string) {
@@ -130,7 +133,22 @@ async function sendProviderBroadcastWave(waveId: string) {
     return { sent: 0 };
   }
 
-  const { provider } = await createProviderForWorkspace(campaign.workspaceId);
+  const capacity = await loadProviderCapacity(campaign.workspaceId);
+  if (capacity.totalAvailable <= 0) {
+    const runAfter = nextUtcDay();
+    await enqueueJob({
+      workspaceId: campaign.workspaceId,
+      type: "send_provider_broadcast",
+      payload: { campaignId: campaign.id, waveId },
+      priority: 10,
+      runAfter,
+    });
+    await db
+      .update(campaignWaves)
+      .set({ status: "ready", scheduledAt: runAfter, updatedAt: new Date() })
+      .where(eq(campaignWaves.id, waveId));
+    return { sent: 0, deferred: rows.length, runAfter: runAfter.toISOString() };
+  }
   const publicBaseUrl = await getPublicBaseUrl(campaign.workspaceId);
   await db
     .update(campaignWaves)
@@ -138,7 +156,20 @@ async function sendProviderBroadcastWave(waveId: string) {
     .where(eq(campaignWaves.id, waveId));
 
   let sent = 0;
-  for (const row of rows) {
+  let accountIndex = 0;
+  for (const row of rows.slice(0, capacity.totalAvailable)) {
+    while (
+      accountIndex < capacity.accounts.length &&
+      capacity.accounts[accountIndex].available <= 0
+    ) {
+      accountIndex += 1;
+    }
+    const account = capacity.accounts[accountIndex];
+    if (!account) break;
+    const provider = new ResendEmailCampaignProvider({
+      apiKey: account.apiKey,
+      providerAccountId: account.id,
+    });
     const variables = buildVariables({
       campaignName: campaign.name,
       unsubscribeUrl: `${publicBaseUrl}/unsubscribe/${row.campaignRecipient.id}`,
@@ -158,12 +189,14 @@ async function sendProviderBroadcastWave(waveId: string) {
         .update(campaignRecipients)
         .set({
           status: "sent",
+          providerAccountId: account.id,
           providerMessageId: result.id,
           sentAt: new Date(),
           updatedAt: new Date(),
         })
         .where(eq(campaignRecipients.id, row.campaignRecipient.id));
       sent += 1;
+      account.available -= 1;
       await sleep(500);
     } catch (error) {
       await db
@@ -178,6 +211,26 @@ async function sendProviderBroadcastWave(waveId: string) {
       throw error;
     }
   }
+  const remainingAfterBatch = rows.length - sent;
+  if (remainingAfterBatch > 0) {
+    const runAfter = nextUtcDay();
+    await enqueueJob({
+      workspaceId: campaign.workspaceId,
+      type: "send_provider_broadcast",
+      payload: { campaignId: campaign.id, waveId },
+      priority: 10,
+      runAfter,
+    });
+    await db
+      .update(campaignWaves)
+      .set({ status: "ready", scheduledAt: runAfter, updatedAt: new Date() })
+      .where(eq(campaignWaves.id, waveId));
+    return {
+      sent,
+      deferred: remainingAfterBatch,
+      runAfter: runAfter.toISOString(),
+    };
+  }
 
   await db
     .update(campaignWaves)
@@ -189,6 +242,70 @@ async function sendProviderBroadcastWave(waveId: string) {
     .where(eq(campaignWaves.id, waveId));
   await completeCampaignIfFullySent(campaign.id);
   return { sent };
+}
+
+async function loadProviderCapacity(workspaceId: string) {
+  const accounts = await db.query.providerAccounts.findMany({
+    where: and(
+      eq(providerAccounts.workspaceId, workspaceId),
+      eq(providerAccounts.provider, "resend"),
+      eq(providerAccounts.status, "active"),
+    ),
+    orderBy: [
+      asc(providerAccounts.routingOrder),
+      asc(providerAccounts.createdAt),
+    ],
+  });
+  if (accounts.length === 0) {
+    throw new Error("No active Resend provider account is configured.");
+  }
+  const usageRows = await db
+    .select({
+      providerAccountId: campaignRecipients.providerAccountId,
+      today: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('day', now()))::int`,
+      month: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('month', now()))::int`,
+    })
+    .from(campaignRecipients)
+    .where(sql`${campaignRecipients.providerAccountId} is not null`)
+    .groupBy(campaignRecipients.providerAccountId);
+  const usage = new Map(usageRows.map((row) => [row.providerAccountId, row]));
+  const capacityAccounts = accounts.map((account) => {
+    const row = usage.get(account.id);
+    const todayRemaining = Math.max(
+      account.dailySendLimit - (row?.today ?? 0),
+      0,
+    );
+    const monthRemaining = Math.max(
+      account.monthlySendLimit - (row?.month ?? 0),
+      0,
+    );
+    return {
+      id: account.id,
+      apiKey: decryptSecret(account.apiKeyEncrypted),
+      available: Math.min(todayRemaining, monthRemaining),
+    };
+  });
+  return {
+    accounts: capacityAccounts,
+    totalAvailable: capacityAccounts.reduce(
+      (sum, account) => sum + account.available,
+      0,
+    ),
+  };
+}
+
+function nextUtcDay() {
+  const now = new Date();
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + 1,
+      0,
+      5,
+      0,
+    ),
+  );
 }
 
 async function completeCampaignIfFullySent(campaignId: string) {

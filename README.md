@@ -1,6 +1,6 @@
 # Mail Ninja
 
-Standalone email campaign management for teams that need durable imports, suppression handling, safe campaign waves, Resend delivery, webhook ingestion, and private analytics without a CRM or hosted auth provider.
+Standalone email campaign management for teams that need durable imports, suppression handling, quota-aware Resend delivery, webhook ingestion, and private analytics without a CRM or hosted auth provider.
 
 Mail Ninja is designed to be cloned, configured, rebranded, and deployed as an independent product. It uses PostgreSQL as the only required infrastructure dependency and runs the web app and background worker as separate processes.
 
@@ -9,14 +9,18 @@ Mail Ninja is designed to be cloned, configured, rebranded, and deployed as an i
 - Import email recipients from CSV.
 - Validate, normalize, inspect, and deduplicate imported rows.
 - Optionally auto-score imported recipients into priority cohorts.
-- Manually override recipient priority for wave ordering.
+- Manually override recipient priority for campaign preparation order.
 - Keep a global suppression list.
 - Create reusable email templates and copy them into campaigns when needed.
-- Prepare campaigns into deterministic sending waves.
+- Choose campaign audiences from all recipients, saved segments, or manual recipient selections.
+- Prepare campaigns into durable recipient plans.
+- Respect required daily and monthly provider-key send limits.
+- Spend multiple Resend API keys sequentially by routing order and automatically defer overflow to later days.
+- Show campaign delivery progress, remaining recipients, daily key-pool capacity, and estimated completion date.
 - Store durable background jobs in PostgreSQL.
 - Receive and deduplicate Resend webhook events.
 - Configure multiple encrypted provider API keys.
-- Spend provider keys sequentially or distribute work across them in parallel.
+- Spend provider keys sequentially while respecting each key's configured quotas.
 - View provider metrics combined or broken down by API key.
 - Track deliveries, opens, clicks, bounces, complaints, failures, and unsubscribes.
 - Manage local administrators without public registration.
@@ -369,7 +373,7 @@ Priority scoring is optional. Enable it on the import detail page with:
 Auto-score priority cohorts during analysis
 ```
 
-Administrators can manually override any recipient priority from the recipient detail page. Campaign preparation uses `priority_score DESC, recipient_id ASC`, so higher-priority recipients are assigned to earlier waves first.
+Administrators can manually override any recipient priority from the recipient detail page. Campaign preparation uses `priority_score DESC, recipient_id ASC`, so higher-priority recipients are prepared first.
 
 ## Import Template
 
@@ -442,16 +446,27 @@ From there you can add any number of API keys. Each key has:
 - encrypted API key;
 - optional encrypted webhook secret;
 - routing order;
+- required daily send limit;
+- required monthly send limit;
 - status: active, paused, or failed;
-- usage count;
+- usage count, plus today/month usage against configured limits;
 - last used timestamp.
+
+Quota-aware delivery:
+
+- Every provider key must define a daily and monthly limit.
+- Sequential sending uses active keys in `routing_order`.
+- If key A has 100 sends/day and key B has 50 sends/day, Mail Ninja can send 150 recipients today.
+- Monthly remaining quota also caps the daily capacity for each key.
+- If the campaign has more recipients than today's available key-pool capacity, the remaining recipients are automatically deferred to the next UTC day.
+- Campaign Send & Test shows sent/remaining progress, available daily key-pool capacity, active keys, and estimated completion date.
 
 Supported routing strategies:
 
-| Strategy     | Behavior                                                                                              |
-| ------------ | ----------------------------------------------------------------------------------------------------- |
-| `Sequential` | Uses active keys in routing order and lower usage count first. Good for controlled quota consumption. |
-| `Parallel`   | Distributes operations across active keys. Good for spreading throughput across multiple keys.        |
+| Strategy     | Behavior                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------ |
+| `Sequential` | Uses active keys in routing order and respects each key's daily/monthly remaining quota.         |
+| `Parallel`   | Reserved for future throughput spreading. Sequential is the recommended production-safe setting. |
 
 Set the strategy in:
 
@@ -544,6 +559,7 @@ node --env-file=.env --env-file=.env.local --import tsx src/worker/index.ts
 | `/campaigns`          | Campaign list            |
 | `/campaigns/new`      | New campaign             |
 | `/recipients`         | Recipient list           |
+| `/segments`           | Saved audience segments  |
 | `/imports`            | Import list              |
 | `/imports/new`        | Upload CSV import        |
 | `/suppressions`       | Suppression management   |
@@ -628,6 +644,6 @@ Restart the web process after changing env files.
 
 ## Current Status
 
-Mail Ninja currently includes the application foundation: authentication, settings, administrator management, recipients, suppressions, imports, campaigns, waves, PostgreSQL jobs, webhook event storage, and analytics scaffolding.
+Mail Ninja currently includes the application foundation: authentication, settings, administrator management, recipients, segments, suppressions, imports, campaigns, quota-aware provider-key sending, PostgreSQL jobs, webhook event storage, and analytics scaffolding.
 
 Before enabling real production campaign sends, validate the Resend contact, segment, broadcast, and webhook flow against the target Resend account and verified domain.

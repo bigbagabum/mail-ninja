@@ -1,6 +1,11 @@
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { campaignRecipients, campaignVariants, campaigns } from "@/db/schema";
+import {
+  campaignRecipients,
+  campaignVariants,
+  campaigns,
+  providerAccounts,
+} from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { PageHeader, Badge, InfoNote, ButtonLink } from "@/components/ui";
@@ -29,11 +34,54 @@ export default async function SendPage({
   const variants = await db.query.campaignVariants.findMany({
     where: eq(campaignVariants.campaignId, id),
   });
+  const accounts = await db.query.providerAccounts.findMany({
+    where: and(
+      eq(providerAccounts.workspaceId, admin.workspaceId),
+      eq(providerAccounts.provider, "resend"),
+      eq(providerAccounts.status, "active"),
+    ),
+    orderBy: (table, { asc }) => [
+      asc(table.routingOrder),
+      asc(table.createdAt),
+    ],
+  });
+  const usageRows = await db
+    .select({
+      providerAccountId: campaignRecipients.providerAccountId,
+      today: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('day', now()))::int`,
+      month: sql<number>`count(*) filter (where ${campaignRecipients.sentAt} >= date_trunc('month', now()))::int`,
+    })
+    .from(campaignRecipients)
+    .where(sql`${campaignRecipients.providerAccountId} is not null`)
+    .groupBy(campaignRecipients.providerAccountId);
+  const usageByAccount = new Map(
+    usageRows.map((row) => [row.providerAccountId, row]),
+  );
   const sendableCount = recipients.filter(
     (recipient) =>
       !["suppressed", "excluded", "cancelled"].includes(recipient.status),
   ).length;
   const sentCount = recipients.filter((recipient) => recipient.sentAt).length;
+  const remainingCount = Math.max(sendableCount - sentCount, 0);
+  const progress = sendableCount > 0 ? sentCount / sendableCount : 0;
+  const dailyCapacity = accounts.reduce((sum, account) => {
+    const usage = usageByAccount.get(account.id);
+    const todayRemaining = Math.max(
+      account.dailySendLimit - (usage?.today ?? 0),
+      0,
+    );
+    const monthRemaining = Math.max(
+      account.monthlySendLimit - (usage?.month ?? 0),
+      0,
+    );
+    return sum + Math.min(todayRemaining, monthRemaining);
+  }, 0);
+  const daysRemaining =
+    dailyCapacity > 0 ? Math.ceil(remainingCount / dailyCapacity) : null;
+  const estimatedCompletion =
+    daysRemaining === null
+      ? null
+      : new Date(Date.now() + Math.max(daysRemaining - 1, 0) * 86_400_000);
   const canLaunch = campaign.status === "ready" && sendableCount > 0;
   return (
     <>
@@ -53,6 +101,47 @@ export default async function SendPage({
           </InfoNote>
         </div>
       ) : null}
+      <section className="mb-4 rounded border border-line bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Delivery progress</h2>
+            <p className="mt-1 text-sm text-muted">
+              {sentCount} sent, {remainingCount} remaining
+            </p>
+          </div>
+          <Badge
+            tone={remainingCount === 0 && sentCount > 0 ? "good" : "neutral"}
+          >
+            {(progress * 100).toFixed(0)}%
+          </Badge>
+        </div>
+        <div className="mt-4 h-3 overflow-hidden rounded bg-panel">
+          <div
+            className="h-full bg-accent"
+            style={{ width: `${Math.min(progress * 100, 100)}%` }}
+          />
+        </div>
+        <div className="mt-4 grid gap-3 text-sm md:grid-cols-3">
+          <div className="rounded border border-line p-3">
+            <div className="text-muted">Daily key pool</div>
+            <div className="mt-1 font-medium">
+              {dailyCapacity} available today
+            </div>
+          </div>
+          <div className="rounded border border-line p-3">
+            <div className="text-muted">Active keys</div>
+            <div className="mt-1 font-medium">{accounts.length}</div>
+          </div>
+          <div className="rounded border border-line p-3">
+            <div className="text-muted">Estimated completion</div>
+            <div className="mt-1 font-medium">
+              {estimatedCompletion
+                ? estimatedCompletion.toLocaleDateString()
+                : "No capacity"}
+            </div>
+          </div>
+        </div>
+      </section>
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="rounded border border-line bg-white p-5">
           <div className="flex flex-wrap items-start justify-between gap-3">
