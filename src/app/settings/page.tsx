@@ -1,6 +1,7 @@
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth/session";
 import { PageHeader, Badge, ButtonLink } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { getWorkspaceSettings, updateSettingsAction } from "./actions";
 import { db } from "@/db";
 import { providerAccounts } from "@/db/schema";
@@ -120,6 +121,10 @@ export default async function SettingsPage() {
             defaultValue={settings?.publicBaseUrl ?? env.APP_BASE_URL}
             className="mt-1 w-full rounded border-line"
           />
+          <span className="mt-1 block text-xs font-normal text-muted">
+            Use the public Vercel or custom domain, for example
+            https://your-app.vercel.app. Resend webhooks cannot reach localhost.
+          </span>
         </label>
         <label className="text-sm font-medium">
           Default from name
@@ -188,9 +193,12 @@ export default async function SettingsPage() {
             <option value="by_provider_account">By API key</option>
           </select>
         </label>
-        <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+        <SubmitButton
+          pendingLabel="Saving settings..."
+          className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white"
+        >
           Save settings
-        </button>
+        </SubmitButton>
       </form>
     </>
   );

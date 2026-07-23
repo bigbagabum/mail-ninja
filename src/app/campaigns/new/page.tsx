@@ -2,6 +2,7 @@ import { createCampaignAction } from "../actions";
 import { requireAdmin } from "@/server/auth/session";
 import { env } from "@/lib/env";
 import { PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function NewCampaignPage() {
   await requireAdmin();
@@ -90,9 +91,12 @@ export default async function NewCampaignPage() {
             className="mt-1 w-full rounded border-line"
           />
         </label>
-        <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+        <SubmitButton
+          pendingLabel="Creating campaign..."
+          className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white"
+        >
           Create campaign
-        </button>
+        </SubmitButton>
       </form>
     </>
   );

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { audienceSegments, recipientTags } from "@/db/schema";
 import { AudienceNav } from "@/components/audience-nav";
 import { Badge, EmptyState, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { tagColorClasses } from "@/lib/tags";
 import { requireAdmin } from "@/server/auth/session";
 import {
@@ -110,9 +111,12 @@ export default async function SegmentsPage() {
               </div>
             )}
           </fieldset>
-          <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+          <SubmitButton
+            pendingLabel="Saving segment..."
+            className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white"
+          >
             Save segment
-          </button>
+          </SubmitButton>
         </form>
       </section>
       <section className="mt-6">

@@ -1,9 +1,10 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { db } from "@/db";
-import { providerAccounts } from "@/db/schema";
+import { emailEvents, providerAccounts, workspaceSettings } from "@/db/schema";
 import { CopyButton } from "@/components/copy-button";
 import { Badge, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { env } from "@/lib/env";
 import { requireAdmin } from "@/server/auth/session";
 import {
@@ -15,7 +16,11 @@ import {
 
 export default async function ProviderAccountsPage() {
   const admin = await requireAdmin();
-  const webhookEndpoint = `${env.APP_BASE_URL.replace(/\/$/, "")}/api/webhooks/resend`;
+  const settings = await db.query.workspaceSettings.findFirst({
+    where: eq(workspaceSettings.workspaceId, admin.workspaceId),
+  });
+  const publicBaseUrl = settings?.publicBaseUrl ?? env.APP_BASE_URL;
+  const webhookEndpoint = `${publicBaseUrl.replace(/\/$/, "")}/api/webhooks/resend`;
   const accounts = await db.query.providerAccounts.findMany({
     where: eq(providerAccounts.workspaceId, admin.workspaceId),
     orderBy: (table, { asc }) => [
@@ -24,6 +29,25 @@ export default async function ProviderAccountsPage() {
       asc(table.name),
     ],
   });
+  const [webhookStats] = await db
+    .select({
+      total: sql<number>`count(*)::int`,
+      last24h: sql<number>`count(*) filter (where ${emailEvents.receivedAt} >= now() - interval '24 hours')::int`,
+      opened24h: sql<number>`count(*) filter (where ${emailEvents.eventType} = 'opened' and ${emailEvents.receivedAt} >= now() - interval '24 hours')::int`,
+      clicked24h: sql<number>`count(*) filter (where ${emailEvents.eventType} = 'clicked' and ${emailEvents.receivedAt} >= now() - interval '24 hours')::int`,
+      latestReceivedAt: sql<Date | null>`max(${emailEvents.receivedAt})`,
+    })
+    .from(emailEvents);
+  const latestEvents = await db.query.emailEvents.findMany({
+    limit: 5,
+    orderBy: (table, { desc }) => [desc(table.receivedAt)],
+  });
+  const hasWebhookSecret = accounts.some(
+    (account) => account.webhookSecretEncrypted,
+  );
+  const webhookLooksPublic =
+    !webhookEndpoint.includes("localhost") &&
+    !webhookEndpoint.includes("127.0.0.1");
 
   return (
     <>
@@ -49,8 +73,80 @@ export default async function ProviderAccountsPage() {
           <CopyButton value={webhookEndpoint} label="Copy endpoint" />
         </div>
         <p className="mt-2 text-xs text-blue-800">
-          The value is built from APP_BASE_URL plus /api/webhooks/resend.
+          The value is built from Settings public base URL, falling back to
+          APP_BASE_URL.
         </p>
+      </section>
+      <section className="mb-6 rounded border border-line bg-white p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-semibold">Webhook diagnostics</h2>
+          <Badge
+            tone={webhookLooksPublic && hasWebhookSecret ? "good" : "warn"}
+          >
+            {webhookLooksPublic && hasWebhookSecret
+              ? "configured"
+              : "check setup"}
+          </Badge>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="rounded border border-line p-3">
+            <div className="text-xs text-muted">Endpoint</div>
+            <div className="mt-1 font-medium">
+              {webhookLooksPublic ? "public URL" : "local URL"}
+            </div>
+          </div>
+          <div className="rounded border border-line p-3">
+            <div className="text-xs text-muted">Webhook secret</div>
+            <div className="mt-1 font-medium">
+              {hasWebhookSecret ? "saved" : "missing"}
+            </div>
+          </div>
+          <div className="rounded border border-line p-3">
+            <div className="text-xs text-muted">Events 24h</div>
+            <div className="mt-1 font-medium">{webhookStats.last24h}</div>
+          </div>
+          <div className="rounded border border-line p-3">
+            <div className="text-xs text-muted">Open / click 24h</div>
+            <div className="mt-1 font-medium">
+              {webhookStats.opened24h} / {webhookStats.clicked24h}
+            </div>
+          </div>
+        </div>
+        <p className="mt-3 text-sm text-muted">
+          Latest webhook event:{" "}
+          {webhookStats.latestReceivedAt?.toISOString() ?? "none recorded yet"}.
+        </p>
+        <div className="mt-4 overflow-hidden rounded border border-line">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-panel text-muted">
+              <tr>
+                <th className="p-3">Type</th>
+                <th>Status</th>
+                <th>Email</th>
+                <th>Received</th>
+              </tr>
+            </thead>
+            <tbody>
+              {latestEvents.map((event) => (
+                <tr key={event.id} className="border-t border-line">
+                  <td className="p-3">{event.eventType}</td>
+                  <td>
+                    <Badge>{event.processingStatus}</Badge>
+                  </td>
+                  <td>{event.email}</td>
+                  <td>{event.receivedAt.toISOString()}</td>
+                </tr>
+              ))}
+              {latestEvents.length === 0 ? (
+                <tr>
+                  <td className="p-3 text-muted" colSpan={4}>
+                    No webhook events have been recorded yet.
+                  </td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
       </section>
       <section className="rounded border border-line bg-white p-5">
         <h2 className="font-semibold">Add API Key</h2>
@@ -109,9 +205,7 @@ export default async function ProviderAccountsPage() {
             autoComplete="off"
             className="rounded border-line text-sm"
           />
-          <button className="rounded bg-accent px-3 py-2 text-sm font-medium text-white">
-            Save key
-          </button>
+          <SubmitButton pendingLabel="Saving key...">Save key</SubmitButton>
         </form>
       </section>
 

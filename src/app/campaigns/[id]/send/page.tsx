@@ -4,6 +4,7 @@ import { campaignRecipients, campaignVariants, campaigns } from "@/db/schema";
 import { requireAdmin } from "@/server/auth/session";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { PageHeader, Badge, InfoNote, ButtonLink } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import {
   launchCampaignAction,
   sendCampaignTestEmailAction,
@@ -99,12 +100,13 @@ export default async function SendPage({
                 type="datetime-local"
               />
             </label>
-            <button
+            <SubmitButton
               disabled={!canLaunch}
+              pendingLabel="Sending campaign..."
               className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white disabled:opacity-50"
             >
               Queue campaign
-            </button>
+            </SubmitButton>
             {!canLaunch ? (
               <ButtonLink href={`/campaigns/${id}`}>Open checklist</ButtonLink>
             ) : null}
@@ -132,12 +134,13 @@ export default async function SendPage({
                 required
               />
             </label>
-            <button
+            <SubmitButton
               disabled={variants.length === 0}
+              pendingLabel="Sending test..."
               className="w-fit rounded border border-line px-3 py-2 text-sm font-medium hover:bg-bg disabled:opacity-50"
             >
               Send test
-            </button>
+            </SubmitButton>
           </form>
         </section>
       </div>

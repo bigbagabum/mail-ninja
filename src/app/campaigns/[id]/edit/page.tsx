@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { campaigns } from "@/db/schema";
 import { PageHeader, Badge } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { CampaignTabs } from "@/components/campaign-tabs";
 import { requireAdmin } from "@/server/auth/session";
 import { updateCampaignAction } from "../../actions";
@@ -123,9 +124,12 @@ export default async function CampaignEditPage({
             className="mt-1 w-full rounded border-line"
           />
         </label>
-        <button className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+        <SubmitButton
+          pendingLabel="Saving campaign..."
+          className="w-fit rounded bg-accent px-3 py-2 text-sm font-medium text-white"
+        >
           Save campaign
-        </button>
+        </SubmitButton>
       </form>
     </>
   );

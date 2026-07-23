@@ -7,6 +7,7 @@ import {
 } from "@/db/schema";
 import { AudienceNav } from "@/components/audience-nav";
 import { Badge, PageHeader } from "@/components/ui";
+import { SubmitButton } from "@/components/submit-button";
 import { requireAdmin } from "@/server/auth/session";
 import {
   loadSegmentRecipients,
@@ -122,9 +123,12 @@ export default async function SegmentPage({
                 </p>
               ) : null}
             </div>
-            <button className="mt-3 rounded bg-accent px-3 py-2 text-sm font-medium text-white">
+            <SubmitButton
+              pendingLabel="Adding..."
+              className="mt-3 rounded bg-accent px-3 py-2 text-sm font-medium text-white"
+            >
               Add selected
-            </button>
+            </SubmitButton>
           </form>
           <form
             action={addFilteredRecipientsToSegmentAction}
@@ -144,9 +148,12 @@ export default async function SegmentPage({
                 </option>
               ))}
             </select>
-            <button className="mt-3 rounded border border-line px-3 py-2 text-sm font-medium hover:bg-bg">
+            <SubmitButton
+              pendingLabel="Adding..."
+              className="mt-3 rounded border border-line px-3 py-2 text-sm font-medium hover:bg-bg"
+            >
               Add all filtered results
-            </button>
+            </SubmitButton>
           </form>
         </section>
       ) : null}
