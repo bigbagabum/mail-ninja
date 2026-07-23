@@ -54,12 +54,18 @@ export function scoreRecipientPriority(input: PriorityInput) {
 
   const boundedScore = Math.max(0, Math.min(100, score));
   const cohort =
-    boundedScore >= 80 ? "high_intent" : boundedScore >= 55 ? "engaged" : boundedScore >= 25 ? "standard" : "low_confidence";
+    boundedScore >= 80
+      ? "high_intent"
+      : boundedScore >= 55
+        ? "engaged"
+        : boundedScore >= 25
+          ? "standard"
+          : "low_confidence";
 
   return {
     priorityScore: boundedScore,
     priorityCohort: cohort,
     prioritySource: "auto_import",
-    priorityNotes: reasons.join(", ") || "no priority signals"
+    priorityNotes: reasons.join(", ") || "no priority signals",
   };
 }

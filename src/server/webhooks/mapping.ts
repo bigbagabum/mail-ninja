@@ -1,6 +1,8 @@
 import type { emailEvents } from "@/db/schema";
 
-export function mapResendEventType(type: string): typeof emailEvents.$inferInsert.eventType {
+export function mapResendEventType(
+  type: string,
+): typeof emailEvents.$inferInsert.eventType {
   const normalized = type.replace("email.", "");
   if (normalized === "delivery_delayed") return "delivery_delayed";
   if (normalized === "opened") return "opened";

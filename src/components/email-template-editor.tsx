@@ -107,12 +107,17 @@ export function EmailTemplateEditor({
   const renderedText = useMemo(
     () =>
       renderTemplate(
-        text.trim() || plainTextFromHtml(html) || "Plain text preview will appear here.",
+        text.trim() ||
+          plainTextFromHtml(html) ||
+          "Plain text preview will appear here.",
         previewVariables,
       ),
     [html, text],
   );
-  const previewHtml = useMemo(() => wrapEmailHtml(renderedHtml), [renderedHtml]);
+  const previewHtml = useMemo(
+    () => wrapEmailHtml(renderedHtml),
+    [renderedHtml],
+  );
 
   function syncFromEditor() {
     const nextHtml = editorRef.current?.innerHTML ?? "";
@@ -153,7 +158,10 @@ export function EmailTemplateEditor({
       setHtml(normalizedHtml);
       setText((current) => current || plainTextFromHtml(normalizedHtml));
       if (editorRef.current) editorRef.current.innerHTML = normalizedHtml;
-      syncHiddenFields(normalizedHtml, text || plainTextFromHtml(normalizedHtml));
+      syncHiddenFields(
+        normalizedHtml,
+        text || plainTextFromHtml(normalizedHtml),
+      );
       return;
     }
 

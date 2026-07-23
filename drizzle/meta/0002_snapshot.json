@@ -81,12 +81,8 @@
           "name": "admin_sessions_admin_user_id_admin_users_id_fk",
           "tableFrom": "admin_sessions",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "admin_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["admin_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -96,9 +92,7 @@
         "admin_sessions_token_hash_unique": {
           "name": "admin_sessions_token_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         }
       },
       "policies": {},
@@ -180,12 +174,8 @@
           "name": "admin_users_workspace_id_workspaces_id_fk",
           "tableFrom": "admin_users",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -195,10 +185,7 @@
         "admin_users_workspace_id_normalized_email_unique": {
           "name": "admin_users_workspace_id_normalized_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "normalized_email"
-          ]
+          "columns": ["workspace_id", "normalized_email"]
         }
       },
       "policies": {},
@@ -273,12 +260,8 @@
           "name": "audit_logs_workspace_id_workspaces_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -286,12 +269,8 @@
           "name": "audit_logs_admin_user_id_admin_users_id_fk",
           "tableFrom": "audit_logs",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "admin_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["admin_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -455,12 +434,8 @@
           "name": "campaign_analytics_campaign_id_campaigns_id_fk",
           "tableFrom": "campaign_analytics",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -468,12 +443,8 @@
           "name": "campaign_analytics_wave_id_campaign_waves_id_fk",
           "tableFrom": "campaign_analytics",
           "tableTo": "campaign_waves",
-          "columnsFrom": [
-            "wave_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wave_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -481,12 +452,8 @@
           "name": "campaign_analytics_variant_id_campaign_variants_id_fk",
           "tableFrom": "campaign_analytics",
           "tableTo": "campaign_variants",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["variant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -718,12 +685,8 @@
           "name": "campaign_recipients_campaign_id_campaigns_id_fk",
           "tableFrom": "campaign_recipients",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -731,12 +694,8 @@
           "name": "campaign_recipients_recipient_id_recipients_id_fk",
           "tableFrom": "campaign_recipients",
           "tableTo": "recipients",
-          "columnsFrom": [
-            "recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -744,12 +703,8 @@
           "name": "campaign_recipients_variant_id_campaign_variants_id_fk",
           "tableFrom": "campaign_recipients",
           "tableTo": "campaign_variants",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["variant_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         },
@@ -757,12 +712,8 @@
           "name": "campaign_recipients_wave_id_campaign_waves_id_fk",
           "tableFrom": "campaign_recipients",
           "tableTo": "campaign_waves",
-          "columnsFrom": [
-            "wave_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wave_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -772,10 +723,7 @@
         "campaign_recipients_campaign_id_recipient_id_unique": {
           "name": "campaign_recipients_campaign_id_recipient_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "campaign_id",
-            "recipient_id"
-          ]
+          "columns": ["campaign_id", "recipient_id"]
         }
       },
       "policies": {},
@@ -870,12 +818,8 @@
           "name": "campaign_variants_campaign_id_campaigns_id_fk",
           "tableFrom": "campaign_variants",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -885,11 +829,7 @@
         "campaign_variants_campaign_id_locale_recipient_role_unique": {
           "name": "campaign_variants_campaign_id_locale_recipient_role_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "campaign_id",
-            "locale",
-            "recipient_role"
-          ]
+          "columns": ["campaign_id", "locale", "recipient_role"]
         }
       },
       "policies": {},
@@ -984,12 +924,8 @@
           "name": "campaign_waves_campaign_id_campaigns_id_fk",
           "tableFrom": "campaign_waves",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -999,10 +935,7 @@
         "campaign_waves_campaign_id_position_unique": {
           "name": "campaign_waves_campaign_id_position_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "campaign_id",
-            "position"
-          ]
+          "columns": ["campaign_id", "position"]
         }
       },
       "policies": {},
@@ -1164,12 +1097,8 @@
           "name": "campaigns_workspace_id_workspaces_id_fk",
           "tableFrom": "campaigns",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1177,12 +1106,8 @@
           "name": "campaigns_created_by_admin_users_id_fk",
           "tableFrom": "campaigns",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1192,10 +1117,7 @@
         "campaigns_workspace_id_campaign_key_unique": {
           "name": "campaigns_workspace_id_campaign_key_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "campaign_key"
-          ]
+          "columns": ["workspace_id", "campaign_key"]
         }
       },
       "policies": {},
@@ -1402,12 +1324,8 @@
           "name": "email_events_workspace_id_workspaces_id_fk",
           "tableFrom": "email_events",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1415,12 +1333,8 @@
           "name": "email_events_provider_account_id_provider_accounts_id_fk",
           "tableFrom": "email_events",
           "tableTo": "provider_accounts",
-          "columnsFrom": [
-            "provider_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1428,12 +1342,8 @@
           "name": "email_events_campaign_id_campaigns_id_fk",
           "tableFrom": "email_events",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1441,12 +1351,8 @@
           "name": "email_events_campaign_recipient_id_campaign_recipients_id_fk",
           "tableFrom": "email_events",
           "tableTo": "campaign_recipients",
-          "columnsFrom": [
-            "campaign_recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1454,12 +1360,8 @@
           "name": "email_events_recipient_id_recipients_id_fk",
           "tableFrom": "email_events",
           "tableTo": "recipients",
-          "columnsFrom": [
-            "recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1469,10 +1371,7 @@
         "email_events_provider_provider_event_id_unique": {
           "name": "email_events_provider_provider_event_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "provider",
-            "provider_event_id"
-          ]
+          "columns": ["provider", "provider_event_id"]
         }
       },
       "policies": {},
@@ -1572,12 +1471,8 @@
           "name": "import_rows_import_id_imports_id_fk",
           "tableFrom": "import_rows",
           "tableTo": "imports",
-          "columnsFrom": [
-            "import_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["import_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1585,12 +1480,8 @@
           "name": "import_rows_duplicate_of_recipient_id_recipients_id_fk",
           "tableFrom": "import_rows",
           "tableTo": "recipients",
-          "columnsFrom": [
-            "duplicate_of_recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["duplicate_of_recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1598,12 +1489,8 @@
           "name": "import_rows_recipient_id_recipients_id_fk",
           "tableFrom": "import_rows",
           "tableTo": "recipients",
-          "columnsFrom": [
-            "recipient_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipient_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1613,10 +1500,7 @@
         "import_rows_import_id_row_number_unique": {
           "name": "import_rows_import_id_row_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "import_id",
-            "row_number"
-          ]
+          "columns": ["import_id", "row_number"]
         }
       },
       "policies": {},
@@ -1768,12 +1652,8 @@
           "name": "imports_workspace_id_workspaces_id_fk",
           "tableFrom": "imports",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1781,12 +1661,8 @@
           "name": "imports_created_by_admin_users_id_fk",
           "tableFrom": "imports",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1950,12 +1826,8 @@
           "name": "jobs_workspace_id_workspaces_id_fk",
           "tableFrom": "jobs",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2103,12 +1975,8 @@
           "name": "provider_accounts_workspace_id_workspaces_id_fk",
           "tableFrom": "provider_accounts",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2116,12 +1984,8 @@
           "name": "provider_accounts_created_by_admin_users_id_fk",
           "tableFrom": "provider_accounts",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2131,11 +1995,7 @@
         "provider_accounts_workspace_id_provider_name_unique": {
           "name": "provider_accounts_workspace_id_provider_name_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "provider",
-            "name"
-          ]
+          "columns": ["workspace_id", "provider", "name"]
         }
       },
       "policies": {},
@@ -2267,12 +2127,8 @@
           "name": "provider_broadcasts_workspace_id_workspaces_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2280,12 +2136,8 @@
           "name": "provider_broadcasts_campaign_id_campaigns_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2293,12 +2145,8 @@
           "name": "provider_broadcasts_wave_id_campaign_waves_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "campaign_waves",
-          "columnsFrom": [
-            "wave_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wave_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2306,12 +2154,8 @@
           "name": "provider_broadcasts_variant_id_campaign_variants_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "campaign_variants",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["variant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2319,12 +2163,8 @@
           "name": "provider_broadcasts_provider_account_id_provider_accounts_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "provider_accounts",
-          "columnsFrom": [
-            "provider_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2332,12 +2172,8 @@
           "name": "provider_broadcasts_provider_segment_id_provider_segments_id_fk",
           "tableFrom": "provider_broadcasts",
           "tableTo": "provider_segments",
-          "columnsFrom": [
-            "provider_segment_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_segment_id"],
+          "columnsTo": ["id"],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -2347,11 +2183,7 @@
         "provider_broadcasts_campaign_id_wave_id_variant_id_unique": {
           "name": "provider_broadcasts_campaign_id_wave_id_variant_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "campaign_id",
-            "wave_id",
-            "variant_id"
-          ]
+          "columns": ["campaign_id", "wave_id", "variant_id"]
         }
       },
       "policies": {},
@@ -2458,12 +2290,8 @@
           "name": "provider_segments_workspace_id_workspaces_id_fk",
           "tableFrom": "provider_segments",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2471,12 +2299,8 @@
           "name": "provider_segments_campaign_id_campaigns_id_fk",
           "tableFrom": "provider_segments",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2484,12 +2308,8 @@
           "name": "provider_segments_wave_id_campaign_waves_id_fk",
           "tableFrom": "provider_segments",
           "tableTo": "campaign_waves",
-          "columnsFrom": [
-            "wave_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["wave_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2497,12 +2317,8 @@
           "name": "provider_segments_variant_id_campaign_variants_id_fk",
           "tableFrom": "provider_segments",
           "tableTo": "campaign_variants",
-          "columnsFrom": [
-            "variant_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["variant_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2510,12 +2326,8 @@
           "name": "provider_segments_provider_account_id_provider_accounts_id_fk",
           "tableFrom": "provider_segments",
           "tableTo": "provider_accounts",
-          "columnsFrom": [
-            "provider_account_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["provider_account_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2653,12 +2465,8 @@
           "name": "recipients_workspace_id_workspaces_id_fk",
           "tableFrom": "recipients",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2668,10 +2476,7 @@
         "recipients_workspace_id_normalized_email_unique": {
           "name": "recipients_workspace_id_normalized_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "normalized_email"
-          ]
+          "columns": ["workspace_id", "normalized_email"]
         }
       },
       "policies": {},
@@ -2806,12 +2611,8 @@
           "name": "suppressions_workspace_id_workspaces_id_fk",
           "tableFrom": "suppressions",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2819,12 +2620,8 @@
           "name": "suppressions_campaign_id_campaigns_id_fk",
           "tableFrom": "suppressions",
           "tableTo": "campaigns",
-          "columnsFrom": [
-            "campaign_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["campaign_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2832,12 +2629,8 @@
           "name": "suppressions_email_event_id_email_events_id_fk",
           "tableFrom": "suppressions",
           "tableTo": "email_events",
-          "columnsFrom": [
-            "email_event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["email_event_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -2845,12 +2638,8 @@
           "name": "suppressions_created_by_admin_users_id_fk",
           "tableFrom": "suppressions",
           "tableTo": "admin_users",
-          "columnsFrom": [
-            "created_by"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["created_by"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -2860,10 +2649,7 @@
         "suppressions_workspace_id_normalized_email_unique": {
           "name": "suppressions_workspace_id_normalized_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id",
-            "normalized_email"
-          ]
+          "columns": ["workspace_id", "normalized_email"]
         }
       },
       "policies": {},
@@ -2982,12 +2768,8 @@
           "name": "workspace_settings_workspace_id_workspaces_id_fk",
           "tableFrom": "workspace_settings",
           "tableTo": "workspaces",
-          "columnsFrom": [
-            "workspace_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["workspace_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2997,9 +2779,7 @@
         "workspace_settings_workspace_id_unique": {
           "name": "workspace_settings_workspace_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "workspace_id"
-          ]
+          "columns": ["workspace_id"]
         }
       },
       "policies": {},
@@ -3065,9 +2845,7 @@
         "workspaces_slug_unique": {
           "name": "workspaces_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -3116,12 +2894,7 @@
     "public.campaign_type": {
       "name": "campaign_type",
       "schema": "public",
-      "values": [
-        "service_update",
-        "marketing",
-        "newsletter",
-        "announcement"
-      ]
+      "values": ["service_update", "marketing", "newsletter", "announcement"]
     },
     "public.email_event_type": {
       "name": "email_event_type",
@@ -3143,13 +2916,7 @@
     "public.event_processing_status": {
       "name": "event_processing_status",
       "schema": "public",
-      "values": [
-        "received",
-        "queued",
-        "processed",
-        "ignored",
-        "failed"
-      ]
+      "values": ["received", "queued", "processed", "ignored", "failed"]
     },
     "public.import_row_status": {
       "name": "import_row_status",
@@ -3211,27 +2978,17 @@
     "public.provider_account_status": {
       "name": "provider_account_status",
       "schema": "public",
-      "values": [
-        "active",
-        "paused",
-        "failed"
-      ]
+      "values": ["active", "paused", "failed"]
     },
     "public.provider_metrics_mode": {
       "name": "provider_metrics_mode",
       "schema": "public",
-      "values": [
-        "combined",
-        "by_provider_account"
-      ]
+      "values": ["combined", "by_provider_account"]
     },
     "public.provider_routing_strategy": {
       "name": "provider_routing_strategy",
       "schema": "public",
-      "values": [
-        "sequential",
-        "parallel"
-      ]
+      "values": ["sequential", "parallel"]
     },
     "public.suppression_reason": {
       "name": "suppression_reason",

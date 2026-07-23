@@ -19,6 +19,16 @@ const createProviderAccountSchema = z.object({
   monthlySendLimit: z.coerce.number().int().positive(),
 });
 
+const updateProviderAccountSchema = z.object({
+  providerAccountId: z.string().uuid(),
+  name: z.string().min(1),
+  apiKey: z.string().optional(),
+  webhookSecret: z.string().optional(),
+  routingOrder: z.coerce.number().int().min(0),
+  dailySendLimit: z.coerce.number().int().positive(),
+  monthlySendLimit: z.coerce.number().int().positive(),
+});
+
 function providerErrorMessage(error: unknown) {
   if (error instanceof Error && error.message)
     return error.message.slice(0, 500);
@@ -108,6 +118,74 @@ export async function createProviderAccountAction(formData: FormData) {
       validation: validation.ok ? "success" : "failed",
     },
   });
+  revalidatePath("/settings/providers");
+  revalidatePath("/settings");
+}
+
+export async function updateProviderAccountAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const data = updateProviderAccountSchema.parse(Object.fromEntries(formData));
+  const target = await db.query.providerAccounts.findFirst({
+    where: and(
+      eq(providerAccounts.id, data.providerAccountId),
+      eq(providerAccounts.workspaceId, admin.workspaceId),
+    ),
+  });
+  if (!target) throw new Error("Provider account not found.");
+
+  const nextApiKey = data.apiKey?.trim();
+  const nextWebhookSecret = data.webhookSecret?.trim();
+  const checkedAt = new Date();
+  const validation = nextApiKey
+    ? await validateProviderKey(
+        target.provider as "resend" | "custom",
+        nextApiKey,
+      )
+    : null;
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(providerAccounts)
+      .set({
+        name: data.name,
+        ...(nextApiKey
+          ? {
+              apiKeyEncrypted: encryptSecret(nextApiKey),
+              apiKeyHint: secretHint(nextApiKey),
+              status: validation?.ok ? "active" : "failed",
+              lastCheckedAt: checkedAt,
+              lastError: validation?.error ?? null,
+            }
+          : {}),
+        ...(nextWebhookSecret
+          ? { webhookSecretEncrypted: encryptSecret(nextWebhookSecret) }
+          : {}),
+        routingOrder: data.routingOrder,
+        dailySendLimit: data.dailySendLimit,
+        monthlySendLimit: data.monthlySendLimit,
+        updatedAt: checkedAt,
+      })
+      .where(eq(providerAccounts.id, target.id));
+    await tx.insert(auditLogs).values({
+      workspaceId: admin.workspaceId,
+      adminUserId: admin.id,
+      action: "provider_account_updated",
+      entityType: "provider_account",
+      entityId: target.id,
+      metadata: {
+        provider: target.provider,
+        name: data.name,
+        apiKeyChanged: Boolean(nextApiKey),
+        webhookSecretChanged: Boolean(nextWebhookSecret),
+        validation: validation
+          ? validation.ok
+            ? "success"
+            : "failed"
+          : "not_run",
+      },
+    });
+  });
+
   revalidatePath("/settings/providers");
   revalidatePath("/settings");
 }

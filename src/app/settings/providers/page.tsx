@@ -17,6 +17,7 @@ import {
   deleteProviderAccountAction,
   setProviderAccountStatusAction,
   testProviderAccountAction,
+  updateProviderAccountAction,
 } from "./actions";
 
 export default async function ProviderAccountsPage() {
@@ -244,35 +245,20 @@ export default async function ProviderAccountsPage() {
         </form>
       </section>
 
-      <div className="mt-6 overflow-hidden rounded border border-line bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="bg-panel text-muted">
-            <tr>
-              <th className="p-3">Provider</th>
-              <th>Name</th>
-              <th>Key</th>
-              <th>Status</th>
-              <th>Last check</th>
-              <th>Order</th>
-              <th>Today</th>
-              <th>Month</th>
-              <th>Total usage</th>
-              <th>Last used</th>
-              <th>Last error</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {accounts.map((account) => {
-              const usage = usageByAccount.get(account.id);
-              const today = usage?.today ?? 0;
-              const month = usage?.month ?? 0;
-              return (
-                <tr key={account.id} className="border-t border-line">
-                  <td className="p-3">{account.provider}</td>
-                  <td className="font-medium">{account.name}</td>
-                  <td>{account.apiKeyHint}</td>
-                  <td>
+      <div className="mt-6 grid gap-4">
+        {accounts.map((account) => {
+          const usage = usageByAccount.get(account.id);
+          const today = usage?.today ?? 0;
+          const month = usage?.month ?? 0;
+          return (
+            <section
+              key={account.id}
+              className="rounded border border-line bg-white p-5"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h2 className="font-semibold">{account.name}</h2>
                     {account.status === "active" ? (
                       <Badge tone="good">active</Badge>
                     ) : account.status === "failed" ? (
@@ -280,78 +266,173 @@ export default async function ProviderAccountsPage() {
                     ) : (
                       <Badge tone="warn">paused</Badge>
                     )}
-                  </td>
-                  <td>
+                  </div>
+                  <p className="mt-1 text-sm text-muted">
+                    {account.provider} key {account.apiKeyHint}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <form action={testProviderAccountAction}>
+                    <input
+                      type="hidden"
+                      name="providerAccountId"
+                      value={account.id}
+                    />
+                    <SubmitButton
+                      pendingLabel="Testing..."
+                      className="rounded border border-line px-3 py-2 text-sm hover:bg-panel"
+                    >
+                      Re-test
+                    </SubmitButton>
+                  </form>
+                  <form action={setProviderAccountStatusAction}>
+                    <input
+                      type="hidden"
+                      name="providerAccountId"
+                      value={account.id}
+                    />
+                    <input
+                      type="hidden"
+                      name="status"
+                      value={account.status === "active" ? "paused" : "active"}
+                    />
+                    <SubmitButton
+                      pendingLabel="Updating..."
+                      className="rounded border border-line px-3 py-2 text-sm hover:bg-panel"
+                    >
+                      {account.status === "active" ? "Pause" : "Activate"}
+                    </SubmitButton>
+                  </form>
+                  <form action={deleteProviderAccountAction}>
+                    <input
+                      type="hidden"
+                      name="providerAccountId"
+                      value={account.id}
+                    />
+                    <SubmitButton
+                      pendingLabel="Deleting..."
+                      className="rounded border border-red-200 px-3 py-2 text-sm text-danger hover:bg-red-50"
+                    >
+                      Delete
+                    </SubmitButton>
+                  </form>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-3 text-sm md:grid-cols-5">
+                <div className="rounded border border-line p-3">
+                  <div className="text-xs text-muted">Today</div>
+                  <div className="mt-1 font-medium">
+                    {today} / {account.dailySendLimit}
+                  </div>
+                </div>
+                <div className="rounded border border-line p-3">
+                  <div className="text-xs text-muted">Month</div>
+                  <div className="mt-1 font-medium">
+                    {month} / {account.monthlySendLimit}
+                  </div>
+                </div>
+                <div className="rounded border border-line p-3">
+                  <div className="text-xs text-muted">Total usage</div>
+                  <div className="mt-1 font-medium">{account.usageCount}</div>
+                </div>
+                <div className="rounded border border-line p-3">
+                  <div className="text-xs text-muted">Last check</div>
+                  <div className="mt-1 font-medium">
                     {account.lastCheckedAt
                       ? account.lastCheckedAt.toLocaleString()
                       : "never"}
-                  </td>
-                  <td>{account.routingOrder}</td>
-                  <td>
-                    {today} / {account.dailySendLimit}
-                  </td>
-                  <td>
-                    {month} / {account.monthlySendLimit}
-                  </td>
-                  <td>{account.usageCount}</td>
-                  <td>{account.lastUsedAt?.toISOString() ?? "never"}</td>
-                  <td className="max-w-xs truncate text-danger">
-                    {account.lastError}
-                  </td>
-                  <td className="p-3">
-                    <div className="flex flex-wrap gap-2">
-                      <form action={testProviderAccountAction}>
-                        <input
-                          type="hidden"
-                          name="providerAccountId"
-                          value={account.id}
-                        />
-                        <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
-                          Re-test
-                        </button>
-                      </form>
-                      <form action={setProviderAccountStatusAction}>
-                        <input
-                          type="hidden"
-                          name="providerAccountId"
-                          value={account.id}
-                        />
-                        <input
-                          type="hidden"
-                          name="status"
-                          value={
-                            account.status === "active" ? "paused" : "active"
-                          }
-                        />
-                        <button className="rounded border border-line px-2 py-1 text-sm hover:bg-panel">
-                          {account.status === "active" ? "Pause" : "Activate"}
-                        </button>
-                      </form>
-                      <form action={deleteProviderAccountAction}>
-                        <input
-                          type="hidden"
-                          name="providerAccountId"
-                          value={account.id}
-                        />
-                        <button className="rounded border border-red-200 px-2 py-1 text-sm text-danger hover:bg-red-50">
-                          Delete
-                        </button>
-                      </form>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {accounts.length === 0 ? (
-              <tr>
-                <td colSpan={10} className="p-3 text-muted">
-                  No provider accounts yet. Environment variables can still be
-                  used as a fallback.
-                </td>
-              </tr>
-            ) : null}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+                <div className="rounded border border-line p-3">
+                  <div className="text-xs text-muted">Last used</div>
+                  <div className="mt-1 font-medium">
+                    {account.lastUsedAt?.toISOString() ?? "never"}
+                  </div>
+                </div>
+              </div>
+
+              {account.lastError ? (
+                <p className="mt-3 rounded border border-red-100 bg-red-50 px-3 py-2 text-sm text-danger">
+                  {account.lastError}
+                </p>
+              ) : null}
+
+              <form
+                action={updateProviderAccountAction}
+                autoComplete="off"
+                className="mt-4 grid gap-3 lg:grid-cols-[minmax(160px,1fr)_minmax(180px,1fr)_minmax(180px,1fr)_100px_120px_130px_auto]"
+              >
+                <input
+                  type="hidden"
+                  name="providerAccountId"
+                  value={account.id}
+                />
+                <input
+                  name="name"
+                  required
+                  defaultValue={account.name}
+                  placeholder="Key label"
+                  autoComplete="off"
+                  className="rounded border-line text-sm"
+                />
+                <input
+                  name="apiKey"
+                  type="password"
+                  placeholder="New API key, blank keeps current"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  className="rounded border-line text-sm"
+                />
+                <input
+                  name="webhookSecret"
+                  type="password"
+                  placeholder="New webhook secret, blank keeps current"
+                  autoComplete="new-password"
+                  spellCheck={false}
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  className="rounded border-line text-sm"
+                />
+                <input
+                  name="routingOrder"
+                  type="number"
+                  min="0"
+                  defaultValue={account.routingOrder}
+                  autoComplete="off"
+                  className="rounded border-line text-sm"
+                />
+                <input
+                  name="dailySendLimit"
+                  type="number"
+                  min="1"
+                  required
+                  defaultValue={account.dailySendLimit}
+                  className="rounded border-line text-sm"
+                />
+                <input
+                  name="monthlySendLimit"
+                  type="number"
+                  min="1"
+                  required
+                  defaultValue={account.monthlySendLimit}
+                  className="rounded border-line text-sm"
+                />
+                <SubmitButton pendingLabel="Saving...">
+                  Save changes
+                </SubmitButton>
+              </form>
+            </section>
+          );
+        })}
+        {accounts.length === 0 ? (
+          <section className="rounded border border-line bg-white p-5 text-sm text-muted">
+            No provider accounts yet. Environment variables can still be used as
+            a fallback.
+          </section>
+        ) : null}
       </div>
     </>
   );

@@ -18,6 +18,6 @@ export function calculateRates(input: {
     clickToOpenRate: rate(input.uniqueClicked, input.uniqueOpened),
     bounceRate: rate(input.bounced, input.sent),
     complaintRate: rate(input.complained, input.delivered),
-    unsubscribeRate: rate(input.unsubscribed, input.delivered)
+    unsubscribeRate: rate(input.unsubscribed, input.delivered),
   };
 }

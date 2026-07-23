@@ -44,16 +44,22 @@ function parseColor(value: string): Rgba | null {
   if (parts.length < 3) return null;
 
   const toChannel = (part: string) => {
-    if (part.endsWith("%")) return Math.round((Number.parseFloat(part) / 100) * 255);
+    if (part.endsWith("%"))
+      return Math.round((Number.parseFloat(part) / 100) * 255);
     return Number.parseFloat(part);
   };
 
-  const alpha = parts[3] === undefined ? 1 : parts[3].endsWith("%") ? Number.parseFloat(parts[3]) / 100 : Number.parseFloat(parts[3]);
+  const alpha =
+    parts[3] === undefined
+      ? 1
+      : parts[3].endsWith("%")
+        ? Number.parseFloat(parts[3]) / 100
+        : Number.parseFloat(parts[3]);
   return {
     r: clamp(toChannel(parts[0]), 0, 255),
     g: clamp(toChannel(parts[1]), 0, 255),
     b: clamp(toChannel(parts[2]), 0, 255),
-    a: clamp(alpha, 0, 1)
+    a: clamp(alpha, 0, 1),
   };
 }
 
@@ -69,16 +75,22 @@ function composite(fg: Rgba, bg: Rgba): Rgba {
     r: (fg.r * fg.a + bg.r * bg.a * (1 - fg.a)) / alpha,
     g: (fg.g * fg.a + bg.g * bg.a * (1 - fg.a)) / alpha,
     b: (fg.b * fg.a + bg.b * bg.a * (1 - fg.a)) / alpha,
-    a: alpha
+    a: alpha,
   };
 }
 
 function luminance(color: Rgba) {
   const channel = (value: number) => {
     const normalized = value / 255;
-    return normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
   };
-  return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b);
+  return (
+    0.2126 * channel(color.r) +
+    0.7152 * channel(color.g) +
+    0.0722 * channel(color.b)
+  );
 }
 
 function contrastRatio(a: Rgba, b: Rgba) {
@@ -130,7 +142,7 @@ function samplePoints(rect: DOMRect) {
     [rect.left + insetX, rect.top + insetY],
     [rect.right - insetX, rect.top + insetY],
     [rect.left + insetX, rect.bottom - insetY],
-    [rect.right - insetX, rect.bottom - insetY]
+    [rect.right - insetX, rect.bottom - insetY],
   ] as const;
 }
 
@@ -141,20 +153,25 @@ function average(colors: Rgba[]) {
       r: acc.r + color.r / colors.length,
       g: acc.g + color.g / colors.length,
       b: acc.b + color.b / colors.length,
-      a: acc.a + color.a / colors.length
+      a: acc.a + color.a / colors.length,
     }),
-    { r: 0, g: 0, b: 0, a: 0 }
+    { r: 0, g: 0, b: 0, a: 0 },
   );
 }
 
-function applyPalette(element: HTMLElement, background: Rgba, textSamples: Rgba[]) {
+function applyPalette(
+  element: HTMLElement,
+  background: Rgba,
+  textSamples: Rgba[],
+) {
   const lightFg: Rgba = { r: 15, g: 23, b: 42, a: 1 };
   const darkFg: Rgba = { r: 248, g: 250, b: 252, a: 1 };
   const bgLum = luminance(background);
   const textLum = textSamples.length ? luminance(average(textSamples)) : bgLum;
   const lightContrast = contrastRatio(lightFg, background);
   const darkContrast = contrastRatio(darkFg, background);
-  const useDarkGlass = darkContrast > lightContrast || bgLum < 0.34 || textLum < 0.38;
+  const useDarkGlass =
+    darkContrast > lightContrast || bgLum < 0.34 || textLum < 0.38;
 
   const lightStrength = clamp(1 - bgLum, 0, 1);
   const lightAlpha = 0.54 + lightStrength * 0.2;
@@ -177,7 +194,7 @@ function applyPalette(element: HTMLElement, background: Rgba, textSamples: Rgba[
         "--adaptive-glass-active-fg": "rgba(15, 23, 42, 0.96)",
         "--adaptive-glass-active-shadow": "0 12px 26px rgba(0, 0, 0, 0.28)",
         "--adaptive-glass-text-shadow": "0 1px 1px rgba(0, 0, 0, 0.24)",
-        "--adaptive-glass-shadow": "0 20px 55px rgba(0, 0, 0, 0.22)"
+        "--adaptive-glass-shadow": "0 20px 55px rgba(0, 0, 0, 0.22)",
       }
     : {
         "--adaptive-glass-fg": "rgba(15, 23, 42, 0.94)",
@@ -194,7 +211,7 @@ function applyPalette(element: HTMLElement, background: Rgba, textSamples: Rgba[
         "--adaptive-glass-active-fg": "rgba(255, 255, 255, 0.96)",
         "--adaptive-glass-active-shadow": "0 12px 28px rgba(15, 23, 42, 0.18)",
         "--adaptive-glass-text-shadow": `0 1px 1px ${rgba(background, 0.18)}`,
-        "--adaptive-glass-shadow": `0 18px 48px rgba(15, 23, 42, ${shadowAlpha.toFixed(3)})`
+        "--adaptive-glass-shadow": `0 18px 48px rgba(15, 23, 42, ${shadowAlpha.toFixed(3)})`,
       };
 
   for (const [name, value] of Object.entries(vars)) {
@@ -202,7 +219,10 @@ function applyPalette(element: HTMLElement, background: Rgba, textSamples: Rgba[
   }
 }
 
-export function useAdaptiveGlass(ref: RefObject<HTMLElement | null>, watchKey?: string) {
+export function useAdaptiveGlass(
+  ref: RefObject<HTMLElement | null>,
+  watchKey?: string,
+) {
   useEffect(() => {
     const element = ref.current;
     if (!element || typeof window === "undefined") return;
@@ -219,7 +239,10 @@ export function useAdaptiveGlass(ref: RefObject<HTMLElement | null>, watchKey?: 
       const backgrounds: Rgba[] = [];
       const textColors: Rgba[] = [];
       for (const [x, y] of samplePoints(rect)) {
-        const target = document.elementFromPoint(clamp(x, 0, window.innerWidth - 1), clamp(y, 0, window.innerHeight - 1));
+        const target = document.elementFromPoint(
+          clamp(x, 0, window.innerWidth - 1),
+          clamp(y, 0, window.innerHeight - 1),
+        );
         if (!target) continue;
         backgrounds.push(resolvedBackground(target));
         const textColor = nearbyTextColor(target);

@@ -21,7 +21,10 @@ async function buildStructureSql() {
 
   const parts = await Promise.all(
     migrationFiles.map(async (fileName) => {
-      const content = await readFile(path.join(migrationsDir, fileName), "utf8");
+      const content = await readFile(
+        path.join(migrationsDir, fileName),
+        "utf8",
+      );
       return [
         `-- ============================================================`,
         `-- Migration: ${fileName}`,

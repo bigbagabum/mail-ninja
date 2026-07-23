@@ -6,7 +6,10 @@ export function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-export function normalizeLocale(locale: string | null | undefined, fallback = "en") {
+export function normalizeLocale(
+  locale: string | null | undefined,
+  fallback = "en",
+) {
   if (!locale) return fallback;
   const cleaned = locale.trim().replace("_", "-");
   try {

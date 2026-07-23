@@ -5,9 +5,12 @@ import { normalizeEmail } from "@/lib/normalization";
 import { hashPassword } from "@/lib/passwords";
 
 const workspace = await db.query.workspaces.findFirst();
-if (!workspace) throw new Error("Run db:seed first to create the default workspace.");
+if (!workspace)
+  throw new Error("Run db:seed first to create the default workspace.");
 if (!env.INITIAL_ADMIN_EMAIL || !env.INITIAL_ADMIN_PASSWORD) {
-  throw new Error("INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD are required.");
+  throw new Error(
+    "INITIAL_ADMIN_EMAIL and INITIAL_ADMIN_PASSWORD are required.",
+  );
 }
 
 await db
@@ -17,7 +20,7 @@ await db
     email: env.INITIAL_ADMIN_EMAIL,
     normalizedEmail: normalizeEmail(env.INITIAL_ADMIN_EMAIL),
     passwordHash: await hashPassword(env.INITIAL_ADMIN_PASSWORD),
-    displayName: env.INITIAL_ADMIN_NAME
+    displayName: env.INITIAL_ADMIN_NAME,
   })
   .onConflictDoNothing();
 

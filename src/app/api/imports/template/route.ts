@@ -7,7 +7,8 @@ export async function GET() {
   return new NextResponse(buildRecipientImportCsvTemplate(), {
     headers: {
       "content-type": "text/csv; charset=utf-8",
-      "content-disposition": 'attachment; filename="mail-ninja-recipient-import-template.csv"'
-    }
+      "content-disposition":
+        'attachment; filename="mail-ninja-recipient-import-template.csv"',
+    },
   });
 }

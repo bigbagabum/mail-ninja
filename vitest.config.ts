@@ -4,11 +4,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["tests/**/*.test.ts"],
-    testTimeout: 20000
+    testTimeout: 20000,
   },
   resolve: {
     alias: {
-      "@": new URL("./src", import.meta.url).pathname
-    }
-  }
+      "@": new URL("./src", import.meta.url).pathname,
+    },
+  },
 });

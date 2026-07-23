@@ -1,4 +1,8 @@
-export type WaveConfig = { id: string; position: number; recipientLimit: number | null };
+export type WaveConfig = {
+  id: string;
+  position: number;
+  recipientLimit: number | null;
+};
 
 export function assignWave(recipientIndex: number, waves: WaveConfig[]) {
   let remainingIndex = recipientIndex;

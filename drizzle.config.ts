@@ -5,8 +5,10 @@ export default defineConfig({
   out: "./drizzle",
   dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgres://campaign:campaign@localhost:5432/campaign_mailer"
+    url:
+      process.env.DATABASE_URL ??
+      "postgres://campaign:campaign@localhost:5432/campaign_mailer",
   },
   strict: true,
-  verbose: true
+  verbose: true,
 });

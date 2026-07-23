@@ -11,11 +11,11 @@ const config: Config = {
         panel: "#f7f9fb",
         accent: "#0f766e",
         warn: "#b45309",
-        danger: "#b91c1c"
-      }
-    }
+        danger: "#b91c1c",
+      },
+    },
   },
-  plugins: [require("@tailwindcss/forms")]
+  plugins: [require("@tailwindcss/forms")],
 };
 
 export default config;

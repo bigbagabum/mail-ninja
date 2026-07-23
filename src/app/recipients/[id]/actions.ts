@@ -11,14 +11,17 @@ const prioritySchema = z.object({
   recipientId: z.string().uuid(),
   priorityScore: z.coerce.number().int().min(0).max(100),
   priorityCohort: z.string().min(1),
-  priorityNotes: z.string().optional()
+  priorityNotes: z.string().optional(),
 });
 
 export async function updateRecipientPriorityAction(formData: FormData) {
   const admin = await requireAdmin();
   const data = prioritySchema.parse(Object.fromEntries(formData));
   const recipient = await db.query.recipients.findFirst({
-    where: and(eq(recipients.id, data.recipientId), eq(recipients.workspaceId, admin.workspaceId))
+    where: and(
+      eq(recipients.id, data.recipientId),
+      eq(recipients.workspaceId, admin.workspaceId),
+    ),
   });
   if (!recipient) throw new Error("Recipient not found.");
 
@@ -30,7 +33,7 @@ export async function updateRecipientPriorityAction(formData: FormData) {
         priorityCohort: data.priorityCohort,
         prioritySource: "manual",
         priorityNotes: data.priorityNotes || null,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(recipients.id, recipient.id));
     await tx.insert(auditLogs).values({
@@ -39,7 +42,10 @@ export async function updateRecipientPriorityAction(formData: FormData) {
       action: "recipient_priority_update",
       entityType: "recipient",
       entityId: recipient.id,
-      metadata: { priorityScore: data.priorityScore, priorityCohort: data.priorityCohort }
+      metadata: {
+        priorityScore: data.priorityScore,
+        priorityCohort: data.priorityCohort,
+      },
     });
   });
 
