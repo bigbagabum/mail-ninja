@@ -38,6 +38,7 @@ export async function processEmailEvent(eventId: string) {
     where: eq(emailEvents.id, eventId),
   });
   if (!event) return;
+  if (event.processingStatus === "processed") return;
   const recipient = event.providerMessageId
     ? await db.query.campaignRecipients.findFirst({
         where: eq(
