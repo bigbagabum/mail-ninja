@@ -43,30 +43,49 @@ export default async function CampaignPage({
     );
   const checklist = [
     {
-      label: "Campaign settings saved",
+      label: "Settings",
+      detail: `${campaign.fromName} <${campaign.fromEmail}>`,
       ok: Boolean(campaign.fromEmail && campaign.fromName),
       href: `/campaigns/${id}/edit`,
-      action: "Open settings",
+      action: "Review",
     },
     {
-      label: "Email template selected",
+      label: "Template",
+      detail:
+        variants.length === 1
+          ? variants[0].name
+          : `${variants.length} variants`,
       ok: hasTemplate,
       href: `/campaigns/${id}/variants`,
-      action: "Add template",
+      action: hasTemplate ? "Review" : "Add template",
     },
+    ...(campaign.campaignType === "service_update"
+      ? []
+      : [
+          {
+            label: "Unsubscribe",
+            detail: hasRequiredUnsubscribe
+              ? "Link present"
+              : "Required before sending",
+            ok: hasRequiredUnsubscribe,
+            href: `/campaigns/${id}/variants`,
+            action: hasRequiredUnsubscribe ? "Review" : "Add link",
+          },
+        ]),
     {
-      label: "Unsubscribe link requirement",
-      ok: hasRequiredUnsubscribe,
-      href: `/campaigns/${id}/variants`,
-      action: "Edit variants",
-    },
-    {
-      label: `Recipients: ${selectedRecipients.length}`,
+      label: "Recipients",
+      detail: `${selectedRecipients.length} selected`,
       ok: selectedRecipients.length > 0,
       href: `/campaigns/${id}/recipients`,
-      action: recipientCount.value > 0 ? "Choose recipients" : "Add recipients",
+      action:
+        selectedRecipients.length > 0
+          ? "Review"
+          : recipientCount.value > 0
+            ? "Choose"
+            : "Add recipients",
     },
   ];
+  const readyToPrepare = checklist.every((item) => item.ok);
   return (
     <>
       <PageHeader
@@ -95,18 +114,23 @@ export default async function CampaignPage({
         </div>
       </div>
       <section className="mt-6 rounded border border-line bg-white p-5">
-        <h2 className="font-semibold">Preparation checklist</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="font-semibold">Setup</h2>
+          <Badge tone={readyToPrepare ? "good" : "warn"}>
+            {readyToPrepare ? "ready" : "needs attention"}
+          </Badge>
+        </div>
         <div className="mt-3 grid gap-2">
           {checklist.map((item) => (
             <div
               key={item.label}
-              className="flex flex-wrap items-center justify-between gap-3 rounded border border-line p-3 text-sm"
+              className="flex flex-wrap items-center justify-between gap-3 rounded border border-line px-3 py-2.5 text-sm"
             >
-              <div className="flex items-center gap-2">
-                <Badge tone={item.ok ? "good" : "warn"}>
-                  {item.ok ? "ok" : "needed"}
-                </Badge>
-                <span>{item.label}</span>
+              <div className="min-w-0">
+                <div className="font-medium">{item.label}</div>
+                <div className={item.ok ? "text-muted" : "text-amber-800"}>
+                  {item.detail}
+                </div>
               </div>
               <Link href={item.href} className="text-accent hover:underline">
                 {item.action}
