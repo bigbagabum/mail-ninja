@@ -66,6 +66,9 @@ export default async function ProviderAccountsPage() {
   const webhookLooksPublic =
     !webhookEndpoint.includes("localhost") &&
     !webhookEndpoint.includes("127.0.0.1");
+  const fieldClass = "grid gap-1 text-sm";
+  const labelClass = "text-xs font-medium text-muted";
+  const inputClass = "rounded border-line text-sm";
 
   return (
     <>
@@ -177,71 +180,92 @@ export default async function ProviderAccountsPage() {
           autoComplete="off"
           className="mt-4 grid gap-3 lg:grid-cols-[120px_minmax(140px,1fr)_minmax(160px,1fr)_minmax(160px,1fr)_110px_120px_130px_auto]"
         >
-          <select
-            name="provider"
-            defaultValue="resend"
-            className="rounded border-line text-sm"
-          >
-            <option value="resend">Resend</option>
-            <option value="custom">Other service</option>
-          </select>
-          <input
-            name="name"
-            required
-            placeholder="Key label, e.g. Production"
-            autoComplete="off"
-            data-lpignore="true"
-            data-1p-ignore="true"
-            className="rounded border-line text-sm"
-          />
-          <input
-            name="apiKey"
-            required
-            type="password"
-            placeholder="Resend API key"
-            autoComplete="new-password"
-            spellCheck={false}
-            data-lpignore="true"
-            data-1p-ignore="true"
-            className="rounded border-line text-sm"
-          />
-          <input
-            name="webhookSecret"
-            type="password"
-            placeholder="Webhook secret optional"
-            autoComplete="new-password"
-            spellCheck={false}
-            data-lpignore="true"
-            data-1p-ignore="true"
-            className="rounded border-line text-sm"
-          />
-          <input
-            name="routingOrder"
-            type="number"
-            min="0"
-            defaultValue="100"
-            autoComplete="off"
-            className="rounded border-line text-sm"
-          />
-          <input
-            name="dailySendLimit"
-            type="number"
-            min="1"
-            required
-            defaultValue="100"
-            placeholder="Daily limit"
-            className="rounded border-line text-sm"
-          />
-          <input
-            name="monthlySendLimit"
-            type="number"
-            min="1"
-            required
-            defaultValue="3000"
-            placeholder="Monthly limit"
-            className="rounded border-line text-sm"
-          />
-          <SubmitButton pendingLabel="Saving key...">Save key</SubmitButton>
+          <label className={fieldClass}>
+            <span className={labelClass}>Provider</span>
+            <select
+              name="provider"
+              defaultValue="resend"
+              className={inputClass}
+            >
+              <option value="resend">Resend</option>
+              <option value="custom">Other service</option>
+            </select>
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>Key name</span>
+            <input
+              name="name"
+              required
+              placeholder="Production"
+              autoComplete="off"
+              data-lpignore="true"
+              data-1p-ignore="true"
+              className={inputClass}
+            />
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>API key</span>
+            <input
+              name="apiKey"
+              required
+              type="password"
+              placeholder="re_..."
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              className={inputClass}
+            />
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>Webhook secret</span>
+            <input
+              name="webhookSecret"
+              type="password"
+              placeholder="Optional"
+              autoComplete="new-password"
+              spellCheck={false}
+              data-lpignore="true"
+              data-1p-ignore="true"
+              className={inputClass}
+            />
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>Send order</span>
+            <input
+              name="routingOrder"
+              type="number"
+              min="0"
+              defaultValue="100"
+              autoComplete="off"
+              className={inputClass}
+            />
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>Daily limit</span>
+            <input
+              name="dailySendLimit"
+              type="number"
+              min="1"
+              required
+              defaultValue="100"
+              className={inputClass}
+            />
+          </label>
+          <label className={fieldClass}>
+            <span className={labelClass}>Monthly limit</span>
+            <input
+              name="monthlySendLimit"
+              type="number"
+              min="1"
+              required
+              defaultValue="3000"
+              className={inputClass}
+            />
+          </label>
+          <div className="flex items-end">
+            <SubmitButton pendingLabel="Saving key...">Save key</SubmitButton>
+          </div>
         </form>
       </section>
 
@@ -319,25 +343,23 @@ export default async function ProviderAccountsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 text-sm md:grid-cols-5">
+              <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
                 <div className="rounded border border-line p-3">
-                  <div className="text-xs text-muted">Today</div>
+                  <div className="text-xs text-muted">Emails sent today</div>
                   <div className="mt-1 font-medium">
                     {today} / {account.dailySendLimit}
                   </div>
                 </div>
                 <div className="rounded border border-line p-3">
-                  <div className="text-xs text-muted">Month</div>
+                  <div className="text-xs text-muted">
+                    Emails sent this month
+                  </div>
                   <div className="mt-1 font-medium">
                     {month} / {account.monthlySendLimit}
                   </div>
                 </div>
                 <div className="rounded border border-line p-3">
-                  <div className="text-xs text-muted">Total usage</div>
-                  <div className="mt-1 font-medium">{account.usageCount}</div>
-                </div>
-                <div className="rounded border border-line p-3">
-                  <div className="text-xs text-muted">Last check</div>
+                  <div className="text-xs text-muted">Last key test</div>
                   <div className="mt-1 font-medium">
                     {account.lastCheckedAt
                       ? account.lastCheckedAt.toLocaleString()
@@ -368,61 +390,81 @@ export default async function ProviderAccountsPage() {
                   name="providerAccountId"
                   value={account.id}
                 />
-                <input
-                  name="name"
-                  required
-                  defaultValue={account.name}
-                  placeholder="Key label"
-                  autoComplete="off"
-                  className="rounded border-line text-sm"
-                />
-                <input
-                  name="apiKey"
-                  type="password"
-                  placeholder="New API key, blank keeps current"
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  className="rounded border-line text-sm"
-                />
-                <input
-                  name="webhookSecret"
-                  type="password"
-                  placeholder="New webhook secret, blank keeps current"
-                  autoComplete="new-password"
-                  spellCheck={false}
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  className="rounded border-line text-sm"
-                />
-                <input
-                  name="routingOrder"
-                  type="number"
-                  min="0"
-                  defaultValue={account.routingOrder}
-                  autoComplete="off"
-                  className="rounded border-line text-sm"
-                />
-                <input
-                  name="dailySendLimit"
-                  type="number"
-                  min="1"
-                  required
-                  defaultValue={account.dailySendLimit}
-                  className="rounded border-line text-sm"
-                />
-                <input
-                  name="monthlySendLimit"
-                  type="number"
-                  min="1"
-                  required
-                  defaultValue={account.monthlySendLimit}
-                  className="rounded border-line text-sm"
-                />
-                <SubmitButton pendingLabel="Saving...">
-                  Save changes
-                </SubmitButton>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Key name</span>
+                  <input
+                    name="name"
+                    required
+                    defaultValue={account.name}
+                    placeholder="Production"
+                    autoComplete="off"
+                    className={inputClass}
+                  />
+                </label>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Replace API key</span>
+                  <input
+                    name="apiKey"
+                    type="password"
+                    placeholder="Leave empty to keep current"
+                    autoComplete="new-password"
+                    spellCheck={false}
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    className={inputClass}
+                  />
+                </label>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Replace webhook secret</span>
+                  <input
+                    name="webhookSecret"
+                    type="password"
+                    placeholder="Leave empty to keep current"
+                    autoComplete="new-password"
+                    spellCheck={false}
+                    data-lpignore="true"
+                    data-1p-ignore="true"
+                    className={inputClass}
+                  />
+                </label>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Send order</span>
+                  <input
+                    name="routingOrder"
+                    type="number"
+                    min="0"
+                    defaultValue={account.routingOrder}
+                    autoComplete="off"
+                    className={inputClass}
+                  />
+                </label>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Daily limit</span>
+                  <input
+                    name="dailySendLimit"
+                    type="number"
+                    min="1"
+                    required
+                    defaultValue={account.dailySendLimit}
+                    className={inputClass}
+                  />
+                </label>
+                <label className={fieldClass}>
+                  <span className={labelClass}>Monthly limit</span>
+                  <input
+                    name="monthlySendLimit"
+                    type="number"
+                    min="1"
+                    required
+                    defaultValue={account.monthlySendLimit}
+                    className={inputClass}
+                  />
+                </label>
+                <div className="flex items-end">
+                  <SubmitButton pendingLabel="Saving...">
+                    Save changes
+                  </SubmitButton>
+                </div>
               </form>
             </section>
           );
