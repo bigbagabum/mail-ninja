@@ -66,6 +66,19 @@ export default async function CampaignRecipientsPage({
     : filters.manualRecipientIds.length > 0
       ? "manual"
       : "all";
+  const selectedSegment = filters.segmentId
+    ? segments.find((segment) => segment.id === filters.segmentId)
+    : null;
+  const audienceSummary =
+    audienceMode === "segment"
+      ? `Segment: ${selectedSegment?.name ?? "missing segment"}`
+      : audienceMode === "manual"
+        ? `Manual selection: ${filters.manualRecipientIds.length} recipients`
+        : "All recipients";
+  const modeClass = (mode: typeof audienceMode) =>
+    audienceMode === mode
+      ? "border-emerald-300 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-200"
+      : "border-line bg-white";
   return (
     <>
       <PageHeader
@@ -89,9 +102,19 @@ export default async function CampaignRecipientsPage({
         className="mt-6 rounded border border-line bg-white p-5"
       >
         <input type="hidden" name="campaignId" value={id} />
-        <h2 className="font-semibold">Audience selection</h2>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-semibold">Audience selection</h2>
+            <p className="mt-1 text-sm text-muted">
+              Current: {audienceSummary}
+            </p>
+          </div>
+          <Badge tone={selectedRecipients.length > 0 ? "good" : "warn"}>
+            {selectedRecipients.length} selected
+          </Badge>
+        </div>
         <fieldset className="mt-4 grid gap-3 md:grid-cols-3">
-          <label className="rounded border border-line p-3 text-sm">
+          <label className={`rounded border p-3 text-sm ${modeClass("all")}`}>
             <input
               className="mr-2"
               name="audienceMode"
@@ -100,8 +123,13 @@ export default async function CampaignRecipientsPage({
               defaultChecked={audienceMode === "all"}
             />
             All recipients
+            {audienceMode === "all" ? (
+              <Badge tone="good">selected</Badge>
+            ) : null}
           </label>
-          <label className="rounded border border-line p-3 text-sm">
+          <label
+            className={`rounded border p-3 text-sm ${modeClass("segment")}`}
+          >
             <input
               className="mr-2"
               name="audienceMode"
@@ -110,8 +138,13 @@ export default async function CampaignRecipientsPage({
               defaultChecked={audienceMode === "segment"}
             />
             Saved segment
+            {audienceMode === "segment" ? (
+              <Badge tone="good">selected</Badge>
+            ) : null}
           </label>
-          <label className="rounded border border-line p-3 text-sm">
+          <label
+            className={`rounded border p-3 text-sm ${modeClass("manual")}`}
+          >
             <input
               className="mr-2"
               name="audienceMode"
@@ -120,6 +153,9 @@ export default async function CampaignRecipientsPage({
               defaultChecked={audienceMode === "manual"}
             />
             Manual selection
+            {audienceMode === "manual" ? (
+              <Badge tone="good">selected</Badge>
+            ) : null}
           </label>
         </fieldset>
         <label className="mt-4 block text-sm font-medium">
@@ -133,6 +169,7 @@ export default async function CampaignRecipientsPage({
             {segments.map((segment) => (
               <option key={segment.id} value={segment.id}>
                 {segment.name} ({segment.segmentType})
+                {segment.id === filters.segmentId ? " - selected" : ""}
               </option>
             ))}
           </select>
