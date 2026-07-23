@@ -61,22 +61,10 @@ export default async function CampaignPage({
       action: "Edit variants",
     },
     {
-      label: "Recipients available",
-      ok: recipientCount.value > 0,
-      href: "/recipients",
-      action: "Add recipients",
-    },
-    {
-      label: `Selected audience: ${selectedRecipients.length}`,
+      label: `Recipients: ${selectedRecipients.length}`,
       ok: selectedRecipients.length > 0,
-      href: `/campaigns/${id}/edit`,
-      action: "Edit filters",
-    },
-    {
-      label: "Audience filters reviewed",
-      ok: true,
-      href: `/campaigns/${id}/edit`,
-      action: "Edit filters",
+      href: `/campaigns/${id}/recipients`,
+      action: recipientCount.value > 0 ? "Choose recipients" : "Add recipients",
     },
   ];
   return (
