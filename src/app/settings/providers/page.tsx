@@ -175,6 +175,10 @@ export default async function ProviderAccountsPage() {
           API keys are encrypted before storage and validated immediately after
           saving. Existing keys are never shown back in the browser.
         </p>
+        <p className="mt-1 text-xs text-muted">
+          Lower priority numbers are used first when sending through multiple
+          keys.
+        </p>
         <form
           action={createProviderAccountAction}
           autoComplete="off"
@@ -231,7 +235,12 @@ export default async function ProviderAccountsPage() {
             />
           </label>
           <label className={fieldClass}>
-            <span className={labelClass}>Send order</span>
+            <span className={labelClass}>
+              Priority{" "}
+              <span title="Lower number sends first." className="cursor-help">
+                (?)
+              </span>
+            </span>
             <input
               name="routingOrder"
               type="number"
@@ -379,6 +388,10 @@ export default async function ProviderAccountsPage() {
                   {account.lastError}
                 </p>
               ) : null}
+              <p className="mt-4 text-xs text-muted">
+                Lower priority numbers are used first. Leave replacement secret
+                fields empty to keep the current values.
+              </p>
 
               <form
                 action={updateProviderAccountAction}
@@ -428,7 +441,15 @@ export default async function ProviderAccountsPage() {
                   />
                 </label>
                 <label className={fieldClass}>
-                  <span className={labelClass}>Send order</span>
+                  <span className={labelClass}>
+                    Priority{" "}
+                    <span
+                      title="Lower number sends first."
+                      className="cursor-help"
+                    >
+                      (?)
+                    </span>
+                  </span>
                   <input
                     name="routingOrder"
                     type="number"
