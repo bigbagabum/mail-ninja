@@ -70,6 +70,8 @@ export default async function ProviderAccountsPage() {
   const labelClass = "text-xs font-medium text-muted";
   const inputClass =
     "h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-accent focus:shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)] focus:ring-0";
+  const numberInputClass =
+    "h-11 w-24 rounded-md border border-slate-300 bg-white px-3 text-sm shadow-sm outline-none transition placeholder:text-slate-400 focus:border-accent focus:shadow-[inset_0_0_0_1px_rgba(15,118,110,0.35)] focus:ring-0";
   const secondaryButtonClass =
     "h-10 rounded border border-line bg-white px-3 text-sm font-medium text-ink shadow-sm transition hover:bg-panel focus:outline-none focus:ring-0 focus:shadow-[0_0_0_1px_rgba(15,118,110,0.35)]";
   const dangerButtonClass =
@@ -247,7 +249,7 @@ export default async function ProviderAccountsPage() {
               min="0"
               defaultValue="100"
               autoComplete="off"
-              className={inputClass}
+              className={numberInputClass}
             />
             <span className="text-xs text-muted">
               Lower number sends first.
@@ -261,7 +263,7 @@ export default async function ProviderAccountsPage() {
               min="1"
               required
               defaultValue="100"
-              className={inputClass}
+              className={numberInputClass}
             />
           </label>
           <label className={fieldClass}>
@@ -272,7 +274,7 @@ export default async function ProviderAccountsPage() {
               min="1"
               required
               defaultValue="3000"
-              className={inputClass}
+              className={numberInputClass}
             />
           </label>
           <div className="flex items-end">
@@ -456,7 +458,7 @@ export default async function ProviderAccountsPage() {
                     min="0"
                     defaultValue={account.routingOrder}
                     autoComplete="off"
-                    className={inputClass}
+                    className={numberInputClass}
                   />
                   <span className="text-xs text-muted">
                     Lower number sends first.
@@ -470,7 +472,7 @@ export default async function ProviderAccountsPage() {
                     min="1"
                     required
                     defaultValue={account.dailySendLimit}
-                    className={inputClass}
+                    className={numberInputClass}
                   />
                 </label>
                 <label className={fieldClass}>
@@ -481,7 +483,7 @@ export default async function ProviderAccountsPage() {
                     min="1"
                     required
                     defaultValue={account.monthlySendLimit}
-                    className={inputClass}
+                    className={numberInputClass}
                   />
                 </label>
                 <div className="flex items-end">
